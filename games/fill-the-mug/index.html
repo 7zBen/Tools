@@ -62,10 +62,14 @@
     .handle.on i { transform: rotate(12deg); }
     .pour {
       position: absolute; left: 201px; top: 134px; width: 9px; height: 0;
-      background: linear-gradient(var(--foam), var(--beer));
-      border-radius: 5px; pointer-events: none; z-index: 2; opacity: .95;
+      background: linear-gradient(var(--foam), var(--beer) 30%, var(--beer));
+      border-radius: 0 0 5px 5px; pointer-events: none; z-index: 2; opacity: 0;
     }
-    .pour.on { height: 148px; }
+    .pour.on { opacity: .95; }
+    .pour:after {
+      content:""; position: absolute; left: 50%; bottom: -3px; width: 18px; height: 8px;
+      margin-left: -9px; background: var(--beer); border-radius: 50%; opacity: .85;
+    }
     .mug {
       position: absolute; left: 132px; top: 210px; width: 156px; height: 248px;
       border: 11px solid rgba(232,237,245,.9); border-top: 0; border-radius: 0 0 28px 28px;
@@ -175,6 +179,9 @@
       const goalLine = document.getElementById("goalLine");
       const mug = document.getElementById("mug");
       const fx = document.getElementById("fx");
+      const POUR_TOP = 134;
+      const MUG_INNER_TOP = 210;
+      const MUG_INNER_H = 237;
       let level = 0, target = 50, pouring = false, done = false, last = 0, speed = 0, skipStop = false;
       let audioCtx, master, pourGain, pourFilter, bubbleTimer;
 
@@ -259,12 +266,17 @@
         goalLine.style.bottom = target + "%";
         goalLine.setAttribute("data-label", target + "%");
       }
+      function streamToLiquid() {
+        const surface = MUG_INNER_TOP + MUG_INNER_H * (1 - level / 100);
+        pour.style.height = pouring ? Math.max(0, surface - POUR_TOP) + "px" : "0px";
+      }
       function setPour(on) {
         if (done && on) return;
         pouring = on;
         handle.classList.toggle("on", on);
         pour.classList.toggle("on", on);
         if (on) speed = 28;
+        streamToLiquid();
         if (pourGain && audioCtx) {
           pourGain.gain.setTargetAtTime(on ? 0.045 : 0, audioCtx.currentTime, 0.05);
           if (on) bubbleTimer = setInterval(bubble, 140);
@@ -307,6 +319,7 @@
           level = Math.min(100, level + speed * dt);
           liquid.style.height = level + "%";
           liquid.classList.toggle("on", level > 2);
+          streamToLiquid();
           if (pourFilter) pourFilter.frequency.setTargetAtTime(900 + level * 6, audioCtx.currentTime, 0.05);
           if (level >= 100) stop();
         }
