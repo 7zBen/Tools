@@ -88,16 +88,22 @@
     }
     .liquid {
       position: absolute; left: 0; bottom: 0; width: 100%; height: 0%;
-      background: linear-gradient(#fff 0 8%, var(--foam) 14%, #f0d36a 20%, var(--beer) 28% 100%);
+      background: linear-gradient(var(--foam) 0 12px, #f0d36a 22px, var(--beer) 36px 100%);
       border-radius: 0 0 16px 16px;
+      overflow: hidden;
+    }
+    .liquid:before {
+      content:""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+      background: rgba(255,255,255,.65); z-index: 2;
     }
     .foam {
-      position: absolute; left: -2%; right: -2%; top: -14px; height: 28px;
+      position: absolute; left: 0; right: 0; top: 0; height: 14px;
       background: radial-gradient(circle at 20% 70%, #fff 0 18%, transparent 19%),
                   radial-gradient(circle at 50% 80%, #fff 0 16%, transparent 17%),
                   radial-gradient(circle at 80% 65%, #fff 0 20%, transparent 21%),
                   var(--foam);
-      border-radius: 40% 40% 8px 8px; display: none;
+      display: none;
+      pointer-events: none;
     }
     .liquid.on .foam { display: block; }
     .bubbles { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
