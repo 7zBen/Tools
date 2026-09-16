@@ -35,15 +35,15 @@
     .pill { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: 12px; color: var(--muted); }
     .pill b { color: var(--text); font-weight: 600; }
     .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-    button, .file-btn {
+    button, .file-btn, a.btn {
       appearance: none; border: 1px solid var(--line); background: var(--panel);
       color: var(--text); border-radius: 10px; padding: 8px 12px; cursor: pointer;
-      font: inherit; font-size: 13px;
+      font: inherit; font-size: 13px; text-decoration: none; display: inline-block;
     }
-    button:hover, .file-btn:hover { border-color: #3a4560; background: var(--panel-2); }
+    button:hover, .file-btn:hover, a.btn:hover { border-color: #3a4560; background: var(--panel-2); }
     button.primary { background: var(--accent-2); border-color: transparent; color: #fff; }
     button.primary:hover { filter: brightness(1.08); }
-    button.ghost { background: transparent; }
+    button.ghost, a.btn.ghost { background: transparent; }
     button:disabled { opacity: .45; cursor: not-allowed; }
     .search { flex: 1; min-width: 180px; }
     .search input {
@@ -71,7 +71,7 @@
     .title { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .url { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .actions { display: flex; gap: 6px; flex-shrink: 0; }
-    .actions button { padding: 7px 10px; }
+    .actions button, .actions a.btn { padding: 7px 10px; }
     .open-btn { background: #1f3a2c; border-color: #2e5a43; color: #b6f0d0; }
     .open-btn:hover { background: #254737; }
     .keep-btn { color: var(--accent); }
@@ -283,25 +283,21 @@
       }
 
       function openInNewTab(url) {
-        const opened = window.open(url, "_blank", "noopener,noreferrer");
-        if (opened) opened.opener = null;
-        return !!opened;
+        const a = document.createElement("a");
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.referrerPolicy = "no-referrer";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
       }
 
       function openAndRemove(id) {
         const item = state.items.find((row) => row.id === id);
         if (!item || item.done) return;
-        if (!openInNewTab(item.url)) {
-          toast("Popup blocked — allow popups for this site to open links");
-          return;
-        }
+        openInNewTab(item.url);
         markDone(item, "open");
-      }
-
-      function openKeep(id) {
-        const item = state.items.find((row) => row.id === id);
-        if (!item) return;
-        if (!openInNewTab(item.url)) toast("Popup blocked — allow popups for this site to open links");
       }
 
       function markDone(item, action) {
@@ -389,19 +385,24 @@
           const actions = document.createElement("div");
           actions.className = "actions";
 
-          const openBtn = document.createElement("button");
-          openBtn.className = "open-btn";
-          openBtn.type = "button";
+          const openBtn = document.createElement("a");
+          openBtn.className = "btn open-btn";
+          openBtn.href = item.url;
+          openBtn.target = "_blank";
+          openBtn.rel = "noopener noreferrer";
+          openBtn.referrerPolicy = "no-referrer";
           openBtn.title = "Open and remove from list";
           openBtn.textContent = "Open";
-          openBtn.addEventListener("click", function () { openAndRemove(item.id); });
+          openBtn.addEventListener("click", function () { markDone(item, "open"); });
 
-          const keepBtn = document.createElement("button");
-          keepBtn.className = "keep-btn ghost";
-          keepBtn.type = "button";
+          const keepBtn = document.createElement("a");
+          keepBtn.className = "btn keep-btn ghost";
+          keepBtn.href = item.url;
+          keepBtn.target = "_blank";
+          keepBtn.rel = "noopener noreferrer";
+          keepBtn.referrerPolicy = "no-referrer";
           keepBtn.title = "Open but keep in list";
           keepBtn.textContent = "Keep";
-          keepBtn.addEventListener("click", function () { openKeep(item.id); });
 
           const skipBtn = document.createElement("button");
           skipBtn.className = "skip-btn ghost";
