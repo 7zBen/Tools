@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tools</title>
-  <meta name="description" content="Small browser tools. Your data stays on your device." />
+  <title>Den</title>
+  <meta name="description" content="Ben’s den — small browser tools and games. Everything runs on your device." />
   <meta name="referrer" content="no-referrer" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23171a21'/%3E%3Cpath d='M4 8h8M8 4v8' stroke='%236ea8ff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23171a21'/%3E%3Ccircle cx='8' cy='8' r='3.2' fill='none' stroke='%236ea8ff' stroke-width='1.6'/%3E%3C/svg%3E" />
   <style>
     :root {
       --bg: #0f1115;
@@ -16,54 +16,68 @@
       --text: #e8edf5;
       --muted: #8b95a8;
       --accent: #6ea8ff;
-      --accent-2: #3d7dff;
       --shadow: 0 10px 30px rgba(0,0,0,.35);
       --radius: 16px;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; }
     body { min-height: 100vh; }
     .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 80px; }
-    header { margin-bottom: 32px; }
-    h1 { font-size: 32px; letter-spacing: -.03em; margin: 0 0 8px; }
-    .lede { color: var(--muted); max-width: 46ch; }
+    header { margin-bottom: 36px; }
+    .brand { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+    h1 { font-size: 36px; letter-spacing: -.03em; margin: 0 0 8px; }
+    .lede { color: var(--muted); max-width: 46ch; margin: 0; }
+    section { margin-bottom: 36px; }
+    h2.section {
+      font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--muted); margin: 0 0 14px; font-weight: 600;
+    }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
     a.card {
       display: block; text-decoration: none; color: inherit;
       background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-      padding: 18px 18px 16px; box-shadow: var(--shadow); min-height: 140px;
+      padding: 18px 18px 16px; box-shadow: var(--shadow); min-height: 132px;
     }
     a.card:hover { border-color: #3d4c68; background: var(--panel-2); }
-    a.card h2 { margin: 0 0 8px; font-size: 18px; letter-spacing: -.02em; }
+    a.card h3 { margin: 0 0 8px; font-size: 18px; letter-spacing: -.02em; }
     a.card p { margin: 0; color: var(--muted); font-size: 14px; }
     .slug { display: inline-block; margin-top: 14px; font-size: 11px; color: #6d778a; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .status { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
-    .status.error { color: #ffb020; }
-    footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
-    footer a { color: var(--accent); }
+    .status { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+    footer { margin-top: 16px; color: var(--muted); font-size: 13px; }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1 id="siteTitle">Tools</h1>
-      <p class="lede" id="siteDesc">Small browser tools. Everything runs in your browser — lists and links never leave your device.</p>
+      <p class="brand">7zBen</p>
+      <h1 id="siteTitle">Den</h1>
+      <p class="lede" id="siteDesc">Tools first, games underneath. Everything here runs in your browser.</p>
     </header>
-    <div class="status" id="status">Looking for tools…</div>
-    <div class="grid" id="grid"></div>
-    <footer id="footer"></footer>
+
+    <section>
+      <h2 class="section">Tools</h2>
+      <p class="status" id="toolsStatus">Looking for tools…</p>
+      <div class="grid" id="toolsGrid"></div>
+    </section>
+
+    <section>
+      <h2 class="section">Games</h2>
+      <p class="status" id="gamesStatus">Looking for games…</p>
+      <div class="grid" id="gamesGrid"></div>
+    </section>
+
+    <footer><a href="https://github.com/7zBen">github.com/7zBen</a></footer>
   </div>
   <script>
-    const grid = document.getElementById("grid");
-    const statusEl = document.getElementById("status");
-
     function humanize(slug) {
       return String(slug)
         .replace(/\.(html|md)$/i, "")
         .replace(/[-_]+/g, " ")
         .replace(/\s+/g, " ")
         .trim()
-        .replace(/\b\w/g, (c) => c.toUpperCase());
+        .replace(/\b\w/g, function (c) { return c.toUpperCase(); });
     }
 
     function pagesBase() {
@@ -81,9 +95,9 @@
       if (host.endsWith(".github.io")) {
         const owner = host.slice(0, -".github.io".length);
         const repo = parts[0] || (owner + ".github.io");
-        return { owner, repo };
+        return { owner: owner, repo: repo };
       }
-      return { owner: "", repo: "Tools" };
+      return { owner: "7zBen", repo: "tools" };
     }
 
     async function fetchJson(url) {
@@ -105,72 +119,73 @@
       }
     }
 
-    function toolHref(base, slug) {
-      return base + "/tools/" + encodeURIComponent(slug) + "/";
-    }
-
-    async function fromApi(owner, repo, base) {
+    async function fromApi(owner, repo, base, folder, metaName) {
       if (!owner || !repo) return [];
       const res = await fetch(
-        "https://api.github.com/repos/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo) + "/contents/tools",
+        "https://api.github.com/repos/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo) + "/contents/" + folder,
         { headers: { Accept: "application/vnd.github+json" } }
       );
       if (!res.ok) throw new Error("GitHub API " + res.status);
       const entries = await res.json();
       if (!Array.isArray(entries)) return [];
-
-      const tools = [];
+      const items = [];
       for (const entry of entries) {
-        if (entry.type !== "dir") continue;
-        if (!entry.name || entry.name.startsWith(".")) continue;
-        const indexOk = await exists(base + "/tools/" + entry.name + "/index.html");
+        if (entry.type !== "dir" || !entry.name || entry.name.startsWith(".")) continue;
+        const indexOk = await exists(base + "/" + folder + "/" + entry.name + "/index.html");
         if (!indexOk) continue;
-        const meta = await fetchJson(base + "/tools/" + entry.name + "/tool.json");
-        tools.push({
+        const meta = await fetchJson(base + "/" + folder + "/" + entry.name + "/" + metaName);
+        items.push({
           slug: entry.name,
           name: (meta && meta.name) || humanize(entry.name),
-          description: (meta && meta.description) || "Open this tool.",
-          href: toolHref(base, entry.name)
+          description: (meta && meta.description) || "",
+          href: base + "/" + folder + "/" + encodeURIComponent(entry.name) + "/"
         });
       }
-      return tools;
+      return items;
     }
 
-    async function fromManifest(base) {
-      const manifest = await fetchJson(base + "/tools/manifest.json");
-      if (!manifest || !Array.isArray(manifest.tools)) return [];
-      const tools = [];
-      for (const item of manifest.tools) {
-        if (!item || !item.slug) continue;
-        tools.push({
+    async function fromManifest(base, folder) {
+      const manifest = await fetchJson(base + "/" + folder + "/manifest.json");
+      const list = manifest && (manifest.tools || manifest.games || manifest.items);
+      if (!Array.isArray(list)) return [];
+      return list.filter(function (item) { return item && item.slug; }).map(function (item) {
+        return {
           slug: item.slug,
           name: item.name || humanize(item.slug),
-          description: item.description || "Open this tool.",
-          href: toolHref(base, item.slug)
-        });
-      }
-      return tools;
+          description: item.description || "",
+          href: base + "/" + folder + "/" + encodeURIComponent(item.slug) + "/"
+        };
+      });
     }
 
-    function render(tools) {
-      grid.innerHTML = "";
-      tools
-        .slice()
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .forEach((tool) => {
-          const a = document.createElement("a");
-          a.className = "card";
-          a.href = tool.href;
-          const h2 = document.createElement("h2");
-          h2.textContent = tool.name;
-          const p = document.createElement("p");
-          p.textContent = tool.description;
-          const slug = document.createElement("div");
-          slug.className = "slug";
-          slug.textContent = "tools/" + tool.slug;
-          a.append(h2, p, slug);
-          grid.appendChild(a);
-        });
+    function render(grid, items) {
+      grid.textContent = "";
+      items.slice().sort(function (a, b) { return a.name.localeCompare(b.name); }).forEach(function (item) {
+        const a = document.createElement("a");
+        a.className = "card";
+        a.href = item.href;
+        const h3 = document.createElement("h3");
+        h3.textContent = item.name;
+        const p = document.createElement("p");
+        p.textContent = item.description;
+        const slug = document.createElement("div");
+        slug.className = "slug";
+        slug.textContent = item.href.replace(/^\//, "");
+        a.append(h3, p, slug);
+        grid.appendChild(a);
+      });
+    }
+
+    async function loadSection(owner, repo, base, folder, metaName, grid, status) {
+      let items = [];
+      try { items = await fromApi(owner, repo, base, folder, metaName); } catch (err) { console.warn(err); }
+      if (!items.length) items = await fromManifest(base, folder);
+      if (!items.length) {
+        status.textContent = "Nothing here yet.";
+        return;
+      }
+      status.textContent = "";
+      render(grid, items);
     }
 
     (async function init() {
@@ -180,44 +195,14 @@
         document.getElementById("siteTitle").textContent = site.title;
         document.title = site.title;
       }
-      if (site.description) {
-        document.getElementById("siteDesc").textContent = site.description;
-      }
+      if (site.description) document.getElementById("siteDesc").textContent = site.description;
 
       const detected = detectGithub();
       const owner = (site.github && site.github.owner) || detected.owner;
       const repo = (site.github && site.github.repo) || detected.repo;
 
-      if (owner && repo) {
-        const footer = document.getElementById("footer");
-        const link = document.createElement("a");
-        link.href = "https://github.com/" + owner + "/" + repo;
-        link.textContent = owner + "/" + repo;
-        footer.append("Source: ", link, ". Tools run locally in your browser.");
-      }
-
-      let tools = [];
-      let source = "";
-      try {
-        tools = await fromApi(owner, repo, base);
-        if (tools.length) source = "github";
-      } catch (err) {
-        console.warn(err);
-      }
-      if (!tools.length) {
-        tools = await fromManifest(base);
-        if (tools.length) source = "manifest";
-      }
-
-      if (!tools.length) {
-        statusEl.className = "status error";
-        statusEl.textContent = "No tools found yet. Add a folder under /tools with an index.html (optional tool.json for the name and description).";
-        return;
-      }
-
-      statusEl.textContent = tools.length + " tool" + (tools.length === 1 ? "" : "s") +
-        (source === "github" ? " discovered in the repo." : " loaded from the local manifest.");
-      render(tools);
+      await loadSection(owner, repo, base, "tools", "tool.json", document.getElementById("toolsGrid"), document.getElementById("toolsStatus"));
+      await loadSection(owner, repo, base, "games", "game.json", document.getElementById("gamesGrid"), document.getElementById("gamesStatus"));
     })();
   </script>
 </body>

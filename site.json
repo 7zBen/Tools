@@ -1,8 +1,8 @@
 {
-  "title": "Tools",
-  "description": "Small browser tools. Your data stays on your device.",
+  "title": "Den",
+  "description": "Tools first, games underneath. Everything here runs in your browser.",
   "github": {
-    "owner": "",
-    "repo": "Tools"
+    "owner": "7zBen",
+    "repo": "tools"
   }
 }
