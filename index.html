@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>7zBen</title>
-  <meta name="description" content="Small browser tools and games." />
+  <meta name="description" content="Tools & Games" />
   <meta name="referrer" content="no-referrer" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23171a21'/%3E%3Ccircle cx='8' cy='8' r='3.2' fill='none' stroke='%236ea8ff' stroke-width='1.6'/%3E%3C/svg%3E" />
   <style>
@@ -53,7 +53,7 @@
     <header>
       <p class="brand">7zBen</p>
       <h1 id="siteTitle">Home</h1>
-      <p class="lede" id="siteDesc">Tools first, games underneath. Everything here runs in your browser.</p>
+      <p class="lede" id="siteDesc">Tools & Games</p>
     </header>
 
     <section>
@@ -97,7 +97,7 @@
         const repo = parts[0] || (owner + ".github.io");
         return { owner: owner, repo: repo };
       }
-      return { owner: "7zBen", repo: "tools" };
+      return { owner: "7zBen", repo: "stuff" };
     }
 
     function absHref(base, href, folder, slug) {
@@ -184,7 +184,7 @@
         const a = document.createElement("a");
         a.className = "card";
         a.href = item.href;
-        if (item.newTab) {
+        if (item.newTab || item.slug === "slope") {
           a.target = "_blank";
           a.rel = "noopener noreferrer";
         }
