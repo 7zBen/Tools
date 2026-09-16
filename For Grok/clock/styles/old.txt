@@ -1,0 +1,7 @@
+.date{
+    text-shadow: 0 0 1vmax black;
+    font-size: 2vmax; 
+    color: white;
+}
+
+AND 1
