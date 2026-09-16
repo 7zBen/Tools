@@ -80,11 +80,6 @@
       content:""; position:absolute; right:-62px; top:46px; width:42px; height:118px;
       border: 11px solid rgba(232,237,245,.9); border-left: 0; border-radius: 0 58px 90px 0;
     }
-    .rim {
-      position: absolute; left: 132px; top: 198px; width: 156px; height: 16px;
-      border: 11px solid rgba(232,237,245,.95); border-bottom: 0; border-radius: 16px 16px 0 0;
-      z-index: 4; pointer-events: none;
-    }
     .shine {
       position: absolute; left: 18px; top: 18px; width: 16px; height: 70%;
       background: linear-gradient(rgba(255,255,255,.4), rgba(255,255,255,.04));
@@ -141,7 +136,7 @@
     }
     @media (max-width: 520px) {
       .stage { height: 460px; }
-      .mug, .rim { left: calc(50% - 78px); }
+      .mug { left: calc(50% - 78px); }
       .goal:before { right: auto; left: 100%; margin-left: 8px; }
     }
   </style>
@@ -160,7 +155,6 @@
       <div class="spout"></div>
       <button class="handle" id="handle" type="button" aria-label="Pour"><i></i></button>
       <div class="pour" id="pour"></div>
-      <div class="rim"></div>
       <div class="mug" id="mug">
         <div class="shine"></div>
         <div class="goal" id="goalLine" data-label="target"></div>
