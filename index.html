@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tools</title>
+  <meta name="description" content="Small browser tools. Your data stays on your device." />
+  <meta name="referrer" content="no-referrer" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23171a21'/%3E%3Cpath d='M4 8h8M8 4v8' stroke='%236ea8ff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1e232d;
+      --line: #2a3140;
+      --text: #e8edf5;
+      --muted: #8b95a8;
+      --accent: #6ea8ff;
+      --accent-2: #3d7dff;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { min-height: 100vh; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 80px; }
+    header { margin-bottom: 32px; }
+    h1 { font-size: 32px; letter-spacing: -.03em; margin: 0 0 8px; }
+    .lede { color: var(--muted); max-width: 46ch; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    a.card {
+      display: block; text-decoration: none; color: inherit;
+      background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 18px 18px 16px; box-shadow: var(--shadow); min-height: 140px;
+    }
+    a.card:hover { border-color: #3d4c68; background: var(--panel-2); }
+    a.card h2 { margin: 0 0 8px; font-size: 18px; letter-spacing: -.02em; }
+    a.card p { margin: 0; color: var(--muted); font-size: 14px; }
+    .slug { display: inline-block; margin-top: 14px; font-size: 11px; color: #6d778a; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .status { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+    .status.error { color: #ffb020; }
+    footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 id="siteTitle">Tools</h1>
+      <p class="lede" id="siteDesc">Small browser tools. Everything runs in your browser — lists and links never leave your device.</p>
+    </header>
+    <div class="status" id="status">Looking for tools…</div>
+    <div class="grid" id="grid"></div>
+    <footer id="footer"></footer>
+  </div>
+  <script>
+    const grid = document.getElementById("grid");
+    const statusEl = document.getElementById("status");
+
+    function humanize(slug) {
+      return String(slug)
+        .replace(/\.(html|md)$/i, "")
+        .replace(/[-_]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+
+    function pagesBase() {
+      const parts = location.pathname.split("/").filter(Boolean);
+      if (parts.length && !parts[parts.length - 1].includes(".")) {
+        return "/" + parts.join("/");
+      }
+      if (parts.length) parts.pop();
+      return parts.length ? "/" + parts.join("/") : "";
+    }
+
+    function detectGithub() {
+      const host = location.hostname;
+      const parts = location.pathname.split("/").filter(Boolean);
+      if (host.endsWith(".github.io")) {
+        const owner = host.slice(0, -".github.io".length);
+        const repo = parts[0] || (owner + ".github.io");
+        return { owner, repo };
+      }
+      return { owner: "", repo: "Tools" };
+    }
+
+    async function fetchJson(url) {
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) return null;
+        return await res.json();
+      } catch {
+        return null;
+      }
+    }
+
+    async function exists(url) {
+      try {
+        const res = await fetch(url, { method: "GET", cache: "no-store" });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    }
+
+    function toolHref(base, slug) {
+      return base + "/tools/" + encodeURIComponent(slug) + "/";
+    }
+
+    async function fromApi(owner, repo, base) {
+      if (!owner || !repo) return [];
+      const res = await fetch(
+        "https://api.github.com/repos/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo) + "/contents/tools",
+        { headers: { Accept: "application/vnd.github+json" } }
+      );
+      if (!res.ok) throw new Error("GitHub API " + res.status);
+      const entries = await res.json();
+      if (!Array.isArray(entries)) return [];
+
+      const tools = [];
+      for (const entry of entries) {
+        if (entry.type !== "dir") continue;
+        if (!entry.name || entry.name.startsWith(".")) continue;
+        const indexOk = await exists(base + "/tools/" + entry.name + "/index.html");
+        if (!indexOk) continue;
+        const meta = await fetchJson(base + "/tools/" + entry.name + "/tool.json");
+        tools.push({
+          slug: entry.name,
+          name: (meta && meta.name) || humanize(entry.name),
+          description: (meta && meta.description) || "Open this tool.",
+          href: toolHref(base, entry.name)
+        });
+      }
+      return tools;
+    }
+
+    async function fromManifest(base) {
+      const manifest = await fetchJson(base + "/tools/manifest.json");
+      if (!manifest || !Array.isArray(manifest.tools)) return [];
+      const tools = [];
+      for (const item of manifest.tools) {
+        if (!item || !item.slug) continue;
+        tools.push({
+          slug: item.slug,
+          name: item.name || humanize(item.slug),
+          description: item.description || "Open this tool.",
+          href: toolHref(base, item.slug)
+        });
+      }
+      return tools;
+    }
+
+    function render(tools) {
+      grid.innerHTML = "";
+      tools
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach((tool) => {
+          const a = document.createElement("a");
+          a.className = "card";
+          a.href = tool.href;
+          const h2 = document.createElement("h2");
+          h2.textContent = tool.name;
+          const p = document.createElement("p");
+          p.textContent = tool.description;
+          const slug = document.createElement("div");
+          slug.className = "slug";
+          slug.textContent = "tools/" + tool.slug;
+          a.append(h2, p, slug);
+          grid.appendChild(a);
+        });
+    }
+
+    (async function init() {
+      const base = pagesBase();
+      const site = (await fetchJson(base + "/site.json")) || {};
+      if (site.title) {
+        document.getElementById("siteTitle").textContent = site.title;
+        document.title = site.title;
+      }
+      if (site.description) {
+        document.getElementById("siteDesc").textContent = site.description;
+      }
+
+      const detected = detectGithub();
+      const owner = (site.github && site.github.owner) || detected.owner;
+      const repo = (site.github && site.github.repo) || detected.repo;
+
+      if (owner && repo) {
+        const footer = document.getElementById("footer");
+        const link = document.createElement("a");
+        link.href = "https://github.com/" + owner + "/" + repo;
+        link.textContent = owner + "/" + repo;
+        footer.append("Source: ", link, ". Tools run locally in your browser.");
+      }
+
+      let tools = [];
+      let source = "";
+      try {
+        tools = await fromApi(owner, repo, base);
+        if (tools.length) source = "github";
+      } catch (err) {
+        console.warn(err);
+      }
+      if (!tools.length) {
+        tools = await fromManifest(base);
+        if (tools.length) source = "manifest";
+      }
+
+      if (!tools.length) {
+        statusEl.className = "status error";
+        statusEl.textContent = "No tools found yet. Add a folder under /tools with an index.html (optional tool.json for the name and description).";
+        return;
+      }
+
+      statusEl.textContent = tools.length + " tool" + (tools.length === 1 ? "" : "s") +
+        (source === "github" ? " discovered in the repo." : " loaded from the local manifest.");
+      render(tools);
+    })();
+  </script>
+</body>
+</html>
