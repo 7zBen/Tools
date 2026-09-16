@@ -7,100 +7,132 @@
   <meta name="referrer" content="no-referrer" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23171a21'/%3E%3Crect x='5' y='4' width='6' height='9' rx='1' fill='none' stroke='%23ffb020' stroke-width='1.4'/%3E%3C/svg%3E" />
   <style>
-    :root { --bg:#0f1115; --panel:#171a21; --line:#2a3140; --text:#e8edf5; --muted:#8b95a8; --accent:#6ea8ff; --beer:#e0a92a; --foam:#f7f1d6; }
+    :root { --bg:#0c0e13; --panel:#171a21; --line:#2a3140; --text:#e8edf5; --muted:#8b95a8; --accent:#6ea8ff; --beer:#e0a92a; --foam:#f7f1d6; }
     * { box-sizing: border-box; }
     html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     body { min-height: 100vh; overflow-x: hidden; }
     .bar { display: flex; justify-content: space-between; padding: 14px 18px; }
     .bar a { color: var(--muted); text-decoration: none; font-size: 13px; }
     .bar a:hover { color: var(--accent); }
-    .wrap { width: min(440px, calc(100% - 32px)); margin: 0 auto 48px; text-align: center; }
-    h1 { font-size: 22px; margin: 0 0 4px; }
-    .sub { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+    .wrap { width: min(560px, calc(100% - 24px)); margin: 0 auto 40px; text-align: center; }
+    h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -.03em; }
+    .sub { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
     .target { font-size: 15px; color: var(--muted); margin: 0; }
-    .target b { color: var(--text); font-size: 28px; letter-spacing: -.03em; }
-    .readout { min-height: 1.5em; margin: 8px 0 4px; }
+    .target b { color: var(--text); font-size: 42px; letter-spacing: -.04em; }
+    .readout { min-height: 1.5em; margin: 8px 0 6px; color: var(--text); }
     .stage {
-      position: relative; height: 380px; margin: 8px auto 0; width: 280px;
-      background: radial-gradient(120px 80px at 50% 88%, #1d2418, transparent 70%);
+      position: relative; height: 520px; margin: 6px auto 0; width: min(420px, 100%);
+      background:
+        radial-gradient(180px 90px at 50% 92%, rgba(224,169,42,.16), transparent 70%),
+        linear-gradient(#1a140f 0 38%, #14110e 38% 100%);
+      border: 1px solid var(--line); border-radius: 22px; overflow: hidden;
+      box-shadow: inset 0 0 80px rgba(0,0,0,.35);
     }
-    .backbar {
-      position: absolute; left: 0; right: 0; top: 0; height: 132px;
-      background: linear-gradient(#3a2a1d, #24180f 70%, #1a120c);
-      border-radius: 12px 12px 0 0;
-      box-shadow: inset 0 -12px 0 #1a120c;
+    .shelf {
+      position: absolute; left: 0; right: 0; top: 0; height: 168px;
+      background:
+        repeating-linear-gradient(90deg, #3a2618 0 18px, #2c1c12 18px 22px),
+        linear-gradient(#4a3222, #24160f);
+      box-shadow: inset 0 -18px 0 #1a100b;
     }
-    .tap {
-      position: absolute; left: 22px; top: 38px; width: 92px; height: 26px;
-      background: linear-gradient(#c5ccd6, #8b949f); border-radius: 8px 4px 4px 8px;
-      box-shadow: 0 6px 0 #5d6570;
+    .tap-body {
+      position: absolute; left: 46px; top: 54px; width: 58px; height: 64px;
+      background: linear-gradient(90deg, #b67a3a, #e8b56a 40%, #8a5524);
+      border-radius: 10px 14px 14px 10px;
+      box-shadow: 4px 8px 0 #1a100b;
     }
-    .tap:before {
-      content:""; position:absolute; left:-16px; top:-14px; width:48px; height:52px;
-      background: linear-gradient(#9aa3b0, #6d7784); border-radius: 8px 14px 14px 8px;
+    .arm {
+      position: absolute; left: 92px; top: 68px; width: 118px; height: 22px;
+      background: linear-gradient(#e8b56a, #b67a3a);
+      border-radius: 8px; box-shadow: 0 6px 0 #5a3518;
     }
     .spout {
-      position: absolute; left: 92px; top: 52px; width: 16px; height: 40px;
-      background: linear-gradient(#c5ccd6, #7d8792); border-radius: 0 0 10px 10px;
+      position: absolute; left: 196px; top: 88px; width: 18px; height: 48px;
+      background: linear-gradient(#e8b56a, #8a5524); border-radius: 0 0 12px 12px;
     }
     .handle {
-      position: absolute; left: 80px; top: 8px; width: 36px; height: 86px;
-      background: transparent; border: 0; cursor: pointer; z-index: 4;
+      position: absolute; left: 176px; top: 18px; width: 56px; height: 110px;
+      background: transparent; border: 0; cursor: pointer; z-index: 5;
     }
     .handle i {
-      display: block; width: 14px; height: 68px; margin: 0 auto;
-      background: linear-gradient(#fff, #cfd6e0); border-radius: 8px 8px 5px 5px;
-      transform-origin: 50% 100%; transition: transform 80ms; box-shadow: 0 2px 0 #8b949f;
+      display: block; width: 18px; height: 86px; margin: 0 auto;
+      background: linear-gradient(#fff6e8, #d7b48a); border-radius: 10px 10px 6px 6px;
+      transform-origin: 50% 100%; transition: transform 80ms; box-shadow: 0 3px 0 #6a401c;
     }
-    .handle.on i { transform: rotate(10deg); }
+    .handle.on i { transform: rotate(12deg); }
     .pour {
-      position: absolute; left: 96px; top: 90px; width: 8px; height: 0;
-      background: linear-gradient(var(--foam), var(--beer)); border-radius: 4px;
-      pointer-events: none; opacity: .95; z-index: 2;
+      position: absolute; left: 201px; top: 134px; width: 9px; height: 0;
+      background: linear-gradient(var(--foam), var(--beer));
+      border-radius: 5px; pointer-events: none; z-index: 2; opacity: .95;
     }
-    .pour.on { height: 132px; }
+    .pour.on { height: 148px; }
     .mug {
-      position: absolute; left: 78px; top: 168px; width: 112px; height: 176px;
-      border: 9px solid rgba(232,237,245,.88); border-top: 0; border-radius: 0 0 18px 18px;
-      background: linear-gradient(90deg, rgba(255,255,255,.06), transparent 30%, rgba(255,255,255,.1));
-      box-shadow: 0 18px 24px rgba(0,0,0,.35);
+      position: absolute; left: 132px; top: 210px; width: 156px; height: 248px;
+      border: 11px solid rgba(232,237,245,.9); border-top: 0; border-radius: 0 0 28px 28px;
+      background: linear-gradient(90deg, rgba(255,255,255,.08), transparent 28%, rgba(255,255,255,.12) 100%);
+      box-shadow: 0 22px 30px rgba(0,0,0,.4);
     }
     .mug:after {
-      content:""; position:absolute; right:-48px; top:32px; width:30px; height:82px;
-      border: 9px solid rgba(232,237,245,.88); border-left: 0; border-radius: 0 44px 70px 0;
+      content:""; position:absolute; right:-62px; top:46px; width:42px; height:118px;
+      border: 11px solid rgba(232,237,245,.9); border-left: 0; border-radius: 0 58px 90px 0;
+    }
+    .rim {
+      position: absolute; left: 132px; top: 198px; width: 156px; height: 16px;
+      border: 11px solid rgba(232,237,245,.95); border-bottom: 0; border-radius: 16px 16px 0 0;
+      z-index: 4; pointer-events: none;
+    }
+    .shine {
+      position: absolute; left: 18px; top: 18px; width: 16px; height: 70%;
+      background: linear-gradient(rgba(255,255,255,.4), rgba(255,255,255,.04));
+      border-radius: 10px; z-index: 4; pointer-events: none;
     }
     .liquid {
       position: absolute; left: 0; bottom: 0; width: 100%; height: 0%;
-      background: linear-gradient(#fff 0 10%, var(--foam) 16%, #f0d36a 22%, var(--beer) 28% 100%);
-      border-radius: 0 0 10px 10px;
+      background: linear-gradient(#fff 0 8%, var(--foam) 14%, #f0d36a 20%, var(--beer) 28% 100%);
+      border-radius: 0 0 16px 16px;
     }
+    .foam {
+      position: absolute; left: -2%; right: -2%; top: -14px; height: 28px;
+      background: radial-gradient(circle at 20% 70%, #fff 0 18%, transparent 19%),
+                  radial-gradient(circle at 50% 80%, #fff 0 16%, transparent 17%),
+                  radial-gradient(circle at 80% 65%, #fff 0 20%, transparent 21%),
+                  var(--foam);
+      border-radius: 40% 40% 8px 8px; display: none;
+    }
+    .liquid.on .foam { display: block; }
     .bubbles { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
     .bubbles span {
-      position:absolute; bottom:8%; width:6px; height:6px; border-radius:50%;
-      background: rgba(255,255,255,.45); animation: up 1.6s linear infinite;
+      position:absolute; bottom:10%; width:7px; height:7px; border-radius:50%;
+      background: rgba(255,255,255,.5); animation: up 1.8s linear infinite;
     }
-    @keyframes up { to { transform: translateY(-90px); opacity: 0; } }
+    @keyframes up { to { transform: translateY(-140px); opacity: 0; } }
     .goal {
-      position: absolute; left: -8px; right: -8px; height: 3px; background: #fb7185;
-      box-shadow: 0 0 0 2px rgba(251,113,133,.25); z-index: 3; border-radius: 2px;
+      position: absolute; left: -14px; right: -14px; height: 4px; background: #fb7185;
+      box-shadow: 0 0 0 3px rgba(251,113,133,.22); z-index: 3; border-radius: 2px;
     }
     .goal:before {
-      content:""; position:absolute; right:-10px; top:-4px; border: 5px solid transparent; border-left-color:#fb7185;
+      content: attr(data-label); position: absolute; right: -78px; top: -10px;
+      color: #fb7185; font-size: 12px; font-weight: 700; white-space: nowrap;
     }
     .fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
     .spark {
-      position: absolute; width: 8px; height: 8px; border-radius: 50%;
-      animation: spark .7s ease-out forwards;
+      position: absolute; width: 10px; height: 10px; border-radius: 50%;
+      animation: spark .8s ease-out forwards;
     }
     @keyframes spark { to { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; } }
     .mug.hit { animation: punch .35s ease; }
     .mug.miss { animation: shake .35s ease; }
-    @keyframes punch { 50% { transform: scale(1.04); filter: brightness(1.2); } }
-    @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-    .actions { display: flex; gap: 8px; margin-top: 10px; }
+    @keyframes punch { 50% { transform: scale(1.04); filter: brightness(1.18); } }
+    @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+    .actions { display: flex; gap: 8px; margin-top: 14px; }
     .actions button {
       flex: 1; appearance: none; background: var(--panel); border: 1px solid var(--line); color: var(--text);
       border-radius: 10px; padding: 10px; cursor: pointer; font: inherit; font-size: 13px;
+    }
+    @media (max-width: 520px) {
+      .stage { height: 460px; }
+      .mug, .rim { left: calc(50% - 78px); }
+      .goal:before { right: auto; left: 100%; margin-left: 8px; }
     }
   </style>
 </head>
@@ -108,18 +140,21 @@
   <div class="bar"><a href="../../">← Home</a></div>
   <div class="wrap">
     <h1>Fill the Mug</h1>
-    <p class="sub">Hold the tap or space. Let go on the red line — it fills fast.</p>
+    <p class="sub">Hold space or the tap, let go on the red line. After a round, space starts the next mug.</p>
     <p class="target">Stop at <b id="goalPct">50</b>%</p>
-    <p class="readout" id="readout">Hold the handle</p>
+    <p class="readout" id="readout">Hold space</p>
     <div class="stage" id="stage">
-      <div class="backbar"></div>
-      <div class="tap"></div>
+      <div class="shelf"></div>
+      <div class="tap-body"></div>
+      <div class="arm"></div>
       <div class="spout"></div>
       <button class="handle" id="handle" type="button" aria-label="Pour"><i></i></button>
       <div class="pour" id="pour"></div>
+      <div class="rim"></div>
       <div class="mug" id="mug">
-        <div class="goal" id="goalLine"></div>
-        <div class="liquid" id="liquid"><div class="bubbles" id="bubbles"></div></div>
+        <div class="shine"></div>
+        <div class="goal" id="goalLine" data-label="target"></div>
+        <div class="liquid" id="liquid"><div class="foam"></div><div class="bubbles" id="bubbles"></div></div>
       </div>
       <div class="fx" id="fx"></div>
     </div>
@@ -134,13 +169,13 @@
       const goalLine = document.getElementById("goalLine");
       const mug = document.getElementById("mug");
       const fx = document.getElementById("fx");
-      let level = 0, target = 50, pouring = false, done = false, last = 0, speed = 0;
+      let level = 0, target = 50, pouring = false, done = false, last = 0, speed = 0, skipStop = false;
       let audioCtx, master, pourGain, pourFilter, bubbleTimer;
 
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 10; i++) {
         const s = document.createElement("span");
         s.style.left = (8 + Math.random() * 80) + "%";
-        s.style.animationDelay = (Math.random() * 1.4) + "s";
+        s.style.animationDelay = (Math.random() * 1.6) + "s";
         document.getElementById("bubbles").appendChild(s);
       }
 
@@ -154,8 +189,7 @@
           const data = buf.getChannelData(0);
           for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
           const src = audioCtx.createBufferSource();
-          src.buffer = buf;
-          src.loop = true;
+          src.buffer = buf; src.loop = true;
           pourFilter = audioCtx.createBiquadFilter();
           pourFilter.type = "bandpass";
           pourFilter.frequency.value = 1100;
@@ -165,10 +199,7 @@
           low.frequency.value = 1600;
           pourGain = audioCtx.createGain();
           pourGain.gain.value = 0;
-          src.connect(pourFilter);
-          pourFilter.connect(low);
-          low.connect(pourGain);
-          pourGain.connect(master);
+          src.connect(pourFilter); pourFilter.connect(low); low.connect(pourGain); pourGain.connect(master);
           src.start();
         }
         if (audioCtx.state === "suspended") audioCtx.resume();
@@ -203,23 +234,24 @@
         mug.classList.remove("miss"); mug.classList.add("hit");
         beep(523, 0.12, "sine", 0.12); beep(659, 0.16, "triangle", 0.1); beep(784, 0.28, "sine", 0.12, 1046);
         const br = mug.getBoundingClientRect(), sr = document.getElementById("stage").getBoundingClientRect();
-        for (let i = 0; i < 22; i++) {
+        for (let i = 0; i < 28; i++) {
           const s = document.createElement("div");
           s.className = "spark";
-          s.style.left = (br.left - sr.left + 56) + "px";
-          s.style.top = (br.top - sr.top + 40) + "px";
+          s.style.left = (br.left - sr.left + 78) + "px";
+          s.style.top = (br.top - sr.top + 50) + "px";
           s.style.background = ["#ffb020", "#f7f1d6", "#6ea8ff", "#3dd68c"][i % 4];
-          const a = Math.random() * Math.PI * 2, d = 40 + Math.random() * 70;
+          const a = Math.random() * Math.PI * 2, d = 50 + Math.random() * 90;
           s.style.setProperty("--dx", Math.cos(a) * d + "px");
           s.style.setProperty("--dy", Math.sin(a) * d + "px");
           fx.appendChild(s);
-          setTimeout(function () { s.remove(); }, 700);
+          setTimeout(function () { s.remove(); }, 800);
         }
       }
       function setTarget() {
         target = 18 + Math.floor(Math.random() * 67);
         document.getElementById("goalPct").textContent = String(target);
         goalLine.style.bottom = target + "%";
+        goalLine.setAttribute("data-label", target + "%");
       }
       function setPour(on) {
         if (done && on) return;
@@ -229,12 +261,8 @@
         if (on) speed = 28;
         if (pourGain && audioCtx) {
           pourGain.gain.setTargetAtTime(on ? 0.045 : 0, audioCtx.currentTime, 0.05);
-          if (on) {
-            bubbleTimer = setInterval(bubble, 140);
-          } else {
-            clearInterval(bubbleTimer);
-            bubbleTimer = null;
-          }
+          if (on) bubbleTimer = setInterval(bubble, 140);
+          else { clearInterval(bubbleTimer); bubbleTimer = null; }
         }
       }
       function stop() {
@@ -245,13 +273,25 @@
         const diff = Math.abs(level - target);
         const rounded = Math.round(level * 10) / 10;
         if (diff <= 1.2) {
-          readout.textContent = "Nailed it — " + rounded + "%";
+          readout.textContent = "Nailed it — " + rounded + "%  ·  space for another";
           celebrate();
         } else {
           mug.classList.remove("hit"); mug.classList.add("miss");
           beep(140, 0.22, "triangle", 0.1, 70);
-          readout.textContent = rounded + "%  ·  needed " + target + "%  ·  off by " + diff.toFixed(1);
+          readout.textContent = rounded + "%  ·  needed " + target + "%  ·  space for a new mug";
         }
+      }
+      function beginPour() {
+        unlock();
+        if (done) { reset(); skipStop = true; }
+        setPour(true);
+      }
+      function endPour() {
+        if (skipStop) {
+          skipStop = false;
+          if (level < 1.5) { setPour(false); return; }
+        }
+        if (pouring) stop();
       }
       function loop(t) {
         const dt = Math.min(0.04, (t - last) / 1000 || 0.016);
@@ -260,6 +300,7 @@
           speed += 38 * dt;
           level = Math.min(100, level + speed * dt);
           liquid.style.height = level + "%";
+          liquid.classList.toggle("on", level > 2);
           if (pourFilter) pourFilter.frequency.setTargetAtTime(900 + level * 6, audioCtx.currentTime, 0.05);
           if (level >= 100) stop();
         }
@@ -268,18 +309,22 @@
       function reset() {
         level = 0; done = false; pouring = false; speed = 0;
         liquid.style.height = "0%";
+        liquid.classList.remove("on");
         mug.classList.remove("hit", "miss");
-        readout.textContent = "Hold the handle";
+        readout.textContent = "Hold space";
         setPour(false);
         setTarget();
       }
-      handle.addEventListener("pointerdown", function (e) { e.preventDefault(); unlock(); if (!done) setPour(true); });
-      window.addEventListener("pointerup", function () { if (pouring) stop(); });
+      handle.addEventListener("pointerdown", function (e) { e.preventDefault(); beginPour(); });
+      window.addEventListener("pointerup", endPour);
       window.addEventListener("keydown", function (e) {
         if (e.code !== "Space" || e.repeat) return;
-        e.preventDefault(); unlock(); if (!done) setPour(true);
+        e.preventDefault();
+        beginPour();
       });
-      window.addEventListener("keyup", function (e) { if (e.code === "Space" && pouring) stop(); });
+      window.addEventListener("keyup", function (e) {
+        if (e.code === "Space") endPour();
+      });
       document.getElementById("reset").onclick = reset;
       reset();
       requestAnimationFrame(loop);

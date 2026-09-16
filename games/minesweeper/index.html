@@ -73,7 +73,7 @@
   <script>
     (function () {
       let W = 9, H = 9, MINES = 10;
-      let mines, open, flag, nums, started, dead, won, t0, tick, cells = [];
+      let mines, open, flag, nums, started, dead, won, t0, tick, cells = [], canRestart = false;
       let muted, audioCtx, master;
       const boardEl = document.getElementById("board");
       const statusEl = document.getElementById("status");
@@ -195,6 +195,7 @@
 
       function boom(hit) {
         dead = true;
+        canRestart = false;
         stopTimer();
         statusEl.textContent = "Boom";
         boardEl.classList.add("shake");
@@ -205,10 +206,16 @@
         idxs.forEach(function (i, n) {
           setTimeout(function () { open[i] = true; paintOne(i, true); }, 40 + n * 45);
         });
-        setTimeout(function () { boardEl.classList.remove("shake"); }, 180);
+        const wait = 40 + Math.max(0, idxs.length - 1) * 45 + 220;
+        setTimeout(function () {
+          boardEl.classList.remove("shake");
+          canRestart = true;
+          statusEl.textContent = "Boom · click the board";
+        }, wait);
       }
 
       function click(r, c, which) {
+        if (dead && canRestart && which !== 2) { reset(); return; }
         if (dead || won) return;
         unlock();
         const i = idx(r, c);
@@ -240,7 +247,7 @@
         if (w) { W = w; H = h; MINES = m; }
         stopTimer();
         mines = []; open = Array(H * W).fill(false); flag = Array(H * W).fill(false);
-        nums = Array(H * W).fill(0); started = false; dead = false; won = false;
+        nums = Array(H * W).fill(0); started = false; dead = false; won = false; canRestart = false;
         document.getElementById("time").textContent = "0";
         document.getElementById("left").textContent = String(MINES);
         statusEl.textContent = "";

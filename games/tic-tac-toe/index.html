@@ -55,7 +55,7 @@
       const boardEl = document.getElementById("board");
       const statusEl = document.getElementById("status");
       const blurb = document.getElementById("blurb");
-      let board, lock, turn, vsCpu = false, cells = [], audioCtx, master;
+      let board, lock, ended, turn, vsCpu = false, cells = [], audioCtx, master;
 
       for (let i = 0; i < 9; i++) {
         const b = document.createElement("button");
@@ -138,17 +138,20 @@
 
       function finish(w) {
         lock = true;
+        ended = true;
         if (w.who === "draw") {
-          statusEl.textContent = "Draw";
+          statusEl.textContent = "Draw · click to play again";
           beep(180, 0.25, "sine", 0.1, 90);
         } else {
-          statusEl.textContent = w.who + " wins";
+          statusEl.textContent = w.who + " wins · click to play again";
           beep(523, 0.12, "sine", 0.12); beep(659, 0.18, "triangle", 0.1); beep(784, 0.24, "sine", 0.1);
         }
         if (w.line) w.line.forEach(function (i) { cells[i].classList.add("win"); });
+        cells.forEach(function (c) { c.disabled = false; });
       }
 
       function play(i) {
+        if (ended) { reset(); return; }
         if (lock || board[i]) return;
         unlock();
         stamp(i, turn);
@@ -173,7 +176,7 @@
 
       function reset() {
         board = ["","","","","","","","",""];
-        lock = false; turn = "X";
+        lock = false; ended = false; turn = "X";
         statusEl.textContent = vsCpu ? "Your move (X)" : "X to play";
         cells.forEach(function (c) { c.textContent = ""; c.disabled = false; c.classList.remove("win", "pop"); });
       }
@@ -190,6 +193,11 @@
       document.getElementById("pvp").onclick = function () { setMode(false); };
       document.getElementById("cpu").onclick = function () { setMode(true); };
       document.getElementById("restart").onclick = reset;
+      window.addEventListener("click", function (e) {
+        if (!ended) return;
+        if (e.target.closest(".modes, .actions, .bar")) return;
+        reset();
+      });
       reset();
     })();
   </script>

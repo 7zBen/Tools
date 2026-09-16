@@ -75,7 +75,7 @@
       const gridEl = document.getElementById("grid");
       const kbEl = document.getElementById("kb");
       const msg = document.getElementById("msg");
-      let answer, row, col, lock, tiles = [], keys = {}, audioCtx, master;
+      let answer, row, col, lock, over, tiles = [], keys = {}, audioCtx, master;
 
       for (let r = 0; r < 6; r++) {
         const rowEl = document.createElement("div");
@@ -184,9 +184,9 @@
           }, i * 90);
         });
         setTimeout(function () {
-          if (guess === answer) { msg.textContent = "Got it"; lock = true; unlock(); celebrate(); return; }
+          if (guess === answer) { msg.textContent = "Got it · press a key"; lock = true; over = true; unlock(); celebrate(); return; }
           row++; col = 0; lock = false;
-          if (row >= 6) msg.textContent = "It was " + answer.toUpperCase();
+          if (row >= 6) { msg.textContent = "It was " + answer.toUpperCase() + " · press a key"; lock = true; over = true; }
           else msg.textContent = "";
         }, 620);
       }
@@ -198,6 +198,7 @@
       }
       function handle(key) {
         unlock();
+        if (over) { reset(); return; }
         if (lock) return;
         if (key === "Enter") return submit();
         if (key === "Backspace") {
@@ -225,7 +226,7 @@
       });
       function reset() {
         answer = ANSWERS[Math.floor(Math.random() * ANSWERS.length)];
-        row = 0; col = 0; lock = false; msg.textContent = "";
+        row = 0; col = 0; lock = false; over = false; msg.textContent = "";
         tiles.forEach(function (r) { r.forEach(function (t) { t.textContent = ""; t.className = "tile"; }); });
         Object.keys(keys).forEach(function (k) { keys[k].classList.remove("good","mid","bad"); });
         document.getElementById("confetti").textContent = "";

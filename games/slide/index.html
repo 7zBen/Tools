@@ -272,6 +272,11 @@
 
       const map = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down", a: "left", d: "right", w: "up", s: "down" };
       window.addEventListener("keydown", function (e) {
+        if (overEl.classList.contains("show")) {
+          e.preventDefault();
+          reset();
+          return;
+        }
         const d = map[e.key];
         if (!d) return;
         e.preventDefault();
