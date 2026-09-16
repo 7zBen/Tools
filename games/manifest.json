@@ -15,6 +15,31 @@
       "slug": "slide",
       "name": "Slide",
       "description": "Join the tiles. Arrow keys or swipe."
+    },
+    {
+      "slug": "wordle",
+      "name": "Wordle",
+      "description": "Guess the 5-letter word in 6 tries."
+    },
+    {
+      "slug": "tic-tac-toe",
+      "name": "Tic Tac Toe",
+      "description": "You are X. The computer plays a perfect O."
+    },
+    {
+      "slug": "simon",
+      "name": "Simon Says",
+      "description": "Watch the sequence, then tap it back."
+    },
+    {
+      "slug": "fill-the-mug",
+      "name": "Fill the Mug",
+      "description": "Hold the tap and stop on the line."
+    },
+    {
+      "slug": "minesweeper",
+      "name": "Minesweeper",
+      "description": "Clear the board. First click is always safe."
     }
   ]
 }

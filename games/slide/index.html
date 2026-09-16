@@ -18,7 +18,7 @@
     .bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; }
     .bar a { color: var(--muted); text-decoration: none; font-size: 13px; }
     .bar a:hover { color: var(--accent); }
-    .bar button {
+    .bar button, button.full {
       appearance: none; background: var(--panel); border: 1px solid var(--line); color: var(--text);
       border-radius: 999px; padding: 6px 12px; cursor: pointer; font: inherit; font-size: 13px;
     }
@@ -41,21 +41,19 @@
     .layer { position: absolute; inset: 8px; }
     .tile {
       position: absolute; border-radius: 10px; display: grid; place-items: center;
-      font-weight: 700; color: #0f1115; width: calc((100% - 24px) / 4); height: calc((100% - 24px) / 4);
-      transition: left 90ms ease-out, top 90ms ease-out, transform 120ms ease;
+      font-weight: 700; color: #0f1115; z-index: 1;
+      width: calc((100% - 24px) / 4); height: calc((100% - 24px) / 4);
+      transition: left 120ms ease-out, top 120ms ease-out, transform 140ms ease;
       box-shadow: 0 4px 0 rgba(0,0,0,.18);
     }
-    .tile.pop { transform: scale(1.12); }
+    .tile.spawn { transform: scale(0); }
+    .tile.pop { transform: scale(1.12); z-index: 2; }
     .overlay {
       position: absolute; inset: 0; border-radius: 16px; display: none;
-      place-items: center; background: rgba(15,17,21,.72); text-align: center;
+      place-items: center; background: rgba(15,17,21,.72); text-align: center; z-index: 5;
     }
     .overlay.show { display: grid; }
-    button.full {
-      appearance: none; width: 100%; margin-top: 14px; background: var(--panel);
-      color: var(--text); border: 1px solid var(--line); border-radius: 10px;
-      padding: 10px; cursor: pointer; font: inherit; font-size: 13px;
-    }
+    button.full { width: 100%; margin-top: 14px; border-radius: 10px; padding: 10px; }
   </style>
 </head>
 <body>
@@ -85,17 +83,17 @@
         32: "#3dd68c", 64: "#22c55e", 128: "#ffb020", 256: "#f59e0b",
         512: "#fb7185", 1024: "#c084fc", 2048: "#e8edf5", 4096: "#ffffff"
       };
-      const slotsEl = document.getElementById("slots");
       const layer = document.getElementById("layer");
       const overEl = document.getElementById("over");
       const muteBtn = document.getElementById("mute");
+      const slotsEl = document.getElementById("slots");
       for (let i = 0; i < 16; i++) {
         const s = document.createElement("div");
         s.className = "slot";
         slotsEl.appendChild(s);
       }
 
-      let grid, score, best, muted, audioCtx, master;
+      let tiles = [], nextId = 1, score = 0, best, muted, audioCtx, master, busy = false, won = false;
       best = parseInt(localStorage.getItem("slide-best") || "0", 10) || 0;
       muted = localStorage.getItem("slide-mute") === "1";
       document.getElementById("best").textContent = String(best);
@@ -128,120 +126,148 @@
       }
       function sfx(kind, n) {
         if (kind === "move") tone(180 + Math.random() * 40, 0.05, "triangle", 0.06);
-        if (kind === "merge") { tone(280 + (n || 2) * 8, 0.12, "square", 0.1, 420); tone(140, 0.1, "sine", 0.05); }
-        if (kind === "spawn") tone(520, 0.06, "sine", 0.05);
+        if (kind === "merge") { tone(280 + Math.log2(n || 4) * 18, 0.12, "square", 0.1, 480); }
+        if (kind === "spawn") tone(520, 0.06, "sine", 0.04);
         if (kind === "over") tone(220, 0.3, "triangle", 0.1, 70);
+        if (kind === "win") { tone(440, 0.12, "sine", 0.1, 660); tone(660, 0.2, "triangle", 0.08); }
       }
 
-      function empty() {
+      function place(el, r, c) {
+        el.style.left = "calc(" + c + " * ((100% - 24px) / 4 + 8px))";
+        el.style.top = "calc(" + r + " * ((100% - 24px) / 4 + 8px))";
+      }
+      function paint(tile) {
+        tile.el.textContent = String(tile.v);
+        tile.el.style.background = COLORS[tile.v] || "#e8edf5";
+        tile.el.style.fontSize = tile.v >= 1024 ? "18px" : tile.v >= 128 ? "22px" : "28px";
+      }
+      function hud() {
+        document.getElementById("score").textContent = String(score);
+        document.getElementById("best").textContent = String(best);
+      }
+      function occupiedMap() {
+        const m = {};
+        tiles.forEach(function (t) { m[t.r + "," + t.c] = t; });
+        return m;
+      }
+      function emptyCells() {
+        const used = occupiedMap();
         const out = [];
-        for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!grid[r][c]) out.push([r, c]);
+        for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!used[r + "," + c]) out.push([r, c]);
         return out;
       }
-      function spawn() {
-        const spots = empty();
-        if (!spots.length) return;
-        const p = spots[Math.floor(Math.random() * spots.length)];
-        grid[p[0]][p[1]] = Math.random() < 0.9 ? 2 : 4;
-        sfx("spawn");
-      }
       function canMove() {
-        if (empty().length) return true;
+        if (emptyCells().length) return true;
+        const m = occupiedMap();
         for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-          const v = grid[r][c];
-          if (c + 1 < N && grid[r][c + 1] === v) return true;
-          if (r + 1 < N && grid[r + 1][c] === v) return true;
+          const t = m[r + "," + c];
+          if (!t) continue;
+          const right = m[r + "," + (c + 1)], down = m[(r + 1) + "," + c];
+          if ((right && right.v === t.v) || (down && down.v === t.v)) return true;
         }
         return false;
       }
-      function slideLine(line) {
-        const vals = line.filter(Boolean);
-        const out = [];
-        let merged = 0;
-        for (let i = 0; i < vals.length; i++) {
-          if (vals[i] && vals[i] === vals[i + 1]) {
-            const v = vals[i] * 2;
-            out.push(v);
-            score += v;
-            merged = v;
-            i++;
-          } else out.push(vals[i]);
+
+      function spawn(animate) {
+        const spots = emptyCells();
+        if (!spots.length) return;
+        const p = spots[Math.floor(Math.random() * spots.length)];
+        const tile = { id: nextId++, v: Math.random() < 0.9 ? 2 : 4, r: p[0], c: p[1] };
+        const el = document.createElement("div");
+        el.className = "tile" + (animate ? " spawn" : "");
+        place(el, tile.r, tile.c);
+        tile.el = el;
+        paint(tile);
+        layer.appendChild(el);
+        tiles.push(tile);
+        if (animate) {
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () { el.classList.remove("spawn"); });
+          });
+          sfx("spawn");
         }
-        while (out.length < N) out.push(0);
-        return { out: out, merged: merged };
       }
 
       function move(dir) {
-        const prev = JSON.stringify(grid);
-        let merged = 0;
-        if (dir === "left" || dir === "right") {
-          for (let r = 0; r < N; r++) {
-            let row = grid[r].slice();
-            if (dir === "right") row.reverse();
-            const res = slideLine(row);
-            if (dir === "right") res.out.reverse();
-            grid[r] = res.out;
-            merged = Math.max(merged, res.merged);
-          }
-        } else {
-          for (let c = 0; c < N; c++) {
-            let col = [];
-            for (let r = 0; r < N; r++) col.push(grid[r][c]);
-            if (dir === "down") col.reverse();
-            const res = slideLine(col);
-            if (dir === "down") res.out.reverse();
-            for (let r = 0; r < N; r++) grid[r][c] = res.out[r];
-            merged = Math.max(merged, res.merged);
-          }
-        }
-        if (JSON.stringify(grid) === prev) return;
-        if (merged) sfx("merge", merged); else sfx("move");
-        spawn();
-        if (score > best) { best = score; localStorage.setItem("slide-best", String(best)); }
-        draw(true);
-        if (!canMove()) {
-          sfx("over");
-          document.getElementById("overTitle").textContent = "Game over · " + score;
-          overEl.classList.add("show");
-        }
-      }
+        if (busy || overEl.classList.contains("show")) return;
+        const dr = dir === "up" ? -1 : dir === "down" ? 1 : 0;
+        const dc = dir === "left" ? -1 : dir === "right" ? 1 : 0;
+        tiles.sort(function (a, b) {
+          return (b.r - a.r) * dr + (b.c - a.c) * dc;
+        });
+        const occupied = {};
+        const merged = {};
+        let moved = false;
+        let mergedVal = 0;
 
-      function placeTile(el, r, c) {
-        el.style.left = "calc(" + c + " * ((100% - 24px) / 4 + 8px))";
-        el.style.top = "calc(" + r + " * ((100% - 24px) / 4 + 8px))";
-        el.style.width = "calc((100% - 24px) / 4)";
-        el.style.height = "calc((100% - 24px) / 4)";
-      }
-
-      function draw(popMerges) {
-        layer.textContent = "";
-        document.getElementById("score").textContent = String(score);
-        document.getElementById("best").textContent = String(best);
-        for (let r = 0; r < N; r++) {
-          for (let c = 0; c < N; c++) {
-            const v = grid[r][c];
-            if (!v) continue;
-            const t = document.createElement("div");
-            t.className = "tile";
-            t.textContent = String(v);
-            t.style.background = COLORS[v] || "#e8edf5";
-            t.style.fontSize = v >= 1024 ? "18px" : v >= 128 ? "22px" : "28px";
-            placeTile(t, r, c);
-            layer.appendChild(t);
-            if (popMerges && v >= 4) {
-              t.classList.add("pop");
-              setTimeout(function () { t.classList.remove("pop"); }, 140);
+        tiles.forEach(function (tile) {
+          let r = tile.r, c = tile.c;
+          while (true) {
+            const nr = r + dr, nc = c + dc;
+            if (nr < 0 || nc < 0 || nr >= N || nc >= N) break;
+            const hit = occupied[nr + "," + nc];
+            if (!hit) { r = nr; c = nc; continue; }
+            if (hit.v === tile.v && !merged[hit.id]) {
+              r = nr; c = nc;
+              hit.v *= 2;
+              score += hit.v;
+              mergedVal = Math.max(mergedVal, hit.v);
+              merged[hit.id] = true;
+              tile.dead = true;
+              tile.mergeTo = hit;
+              moved = true;
             }
+            break;
           }
-        }
+          if (!tile.dead) {
+            if (r !== tile.r || c !== tile.c) moved = true;
+            tile.r = r; tile.c = c;
+            occupied[r + "," + c] = tile;
+          } else {
+            tile.r = r; tile.c = c;
+          }
+        });
+
+        if (!moved) return;
+        busy = true;
+        if (mergedVal) sfx("merge", mergedVal); else sfx("move");
+        if (score > best) { best = score; localStorage.setItem("slide-best", String(best)); }
+        hud();
+
+        tiles.forEach(function (tile) {
+          place(tile.el, tile.r, tile.c);
+          if (tile.dead) {
+            tile.el.style.zIndex = "0";
+            setTimeout(function () { if (tile.el.parentNode) tile.el.remove(); }, 120);
+          } else if (merged[tile.id]) {
+            paint(tile);
+            tile.el.classList.add("pop");
+            setTimeout(function () { tile.el.classList.remove("pop"); }, 160);
+          }
+        });
+        tiles = tiles.filter(function (t) { return !t.dead; });
+
+        setTimeout(function () {
+          spawn(true);
+          busy = false;
+          if (!won && tiles.some(function (t) { return t.v >= 2048; })) {
+            won = true;
+            sfx("win");
+          }
+          if (!canMove()) {
+            sfx("over");
+            document.getElementById("overTitle").textContent = "Game over · " + score;
+            overEl.classList.add("show");
+          }
+        }, 130);
       }
 
       function reset() {
-        grid = Array.from({ length: N }, function () { return [0, 0, 0, 0]; });
-        score = 0;
+        tiles.forEach(function (t) { t.el.remove(); });
+        tiles = []; nextId = 1; score = 0; won = false; busy = false;
         overEl.classList.remove("show");
-        spawn(); spawn();
-        draw(false);
+        spawn(false); spawn(false);
+        hud();
       }
 
       const map = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down", a: "left", d: "right", w: "up", s: "down" };
@@ -252,7 +278,6 @@
         unlockAudio();
         move(d);
       });
-
       let sx = 0, sy = 0;
       document.getElementById("board").addEventListener("touchstart", function (e) {
         sx = e.changedTouches[0].clientX; sy = e.changedTouches[0].clientY;
@@ -265,7 +290,6 @@
         if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? "right" : "left");
         else move(dy > 0 ? "down" : "up");
       });
-
       muteBtn.onclick = function () {
         unlockAudio();
         muted = !muted;

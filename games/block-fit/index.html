@@ -202,7 +202,21 @@
         };
       }
       function refillTray() {
-        if (tray.every(function (p) { return !p; })) tray = [randomPiece(), randomPiece(), randomPiece()];
+        if (!tray.every(function (p) { return !p; })) return;
+        var shapesFit = SHAPES.some(anyFitShape);
+        if (!shapesFit) {
+          tray = [randomPiece(), randomPiece(), randomPiece()];
+          return;
+        }
+        var tries = 0, next;
+        do {
+          next = [randomPiece(), randomPiece(), randomPiece()];
+          tries++;
+        } while (tries < 80 && !next.some(anyFit));
+        tray = next;
+      }
+      function anyFitShape(cells) {
+        return anyFit({ cells: cells });
       }
       function canPlace(piece, r0, c0) {
         for (let i = 0; i < piece.cells.length; i++) {
