@@ -135,7 +135,7 @@
       const mug = document.getElementById("mug");
       const fx = document.getElementById("fx");
       let level = 0, target = 50, pouring = false, done = false, last = 0, speed = 0;
-      let audioCtx, master, hiss;
+      let audioCtx, master, pourGain, pourFilter, bubbleTimer;
 
       for (let i = 0; i < 7; i++) {
         const s = document.createElement("span");
@@ -149,12 +149,42 @@
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
           master = audioCtx.createGain();
           master.connect(audioCtx.destination);
-          const n = audioCtx.createOscillator();
-          hiss = audioCtx.createGain();
-          n.type = "sawtooth"; n.frequency.value = 70;
-          hiss.gain.value = 0; n.connect(hiss); hiss.connect(master); n.start();
+          const len = audioCtx.sampleRate * 2;
+          const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+          const src = audioCtx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+          pourFilter = audioCtx.createBiquadFilter();
+          pourFilter.type = "bandpass";
+          pourFilter.frequency.value = 1100;
+          pourFilter.Q.value = 0.55;
+          const low = audioCtx.createBiquadFilter();
+          low.type = "lowpass";
+          low.frequency.value = 1600;
+          pourGain = audioCtx.createGain();
+          pourGain.gain.value = 0;
+          src.connect(pourFilter);
+          pourFilter.connect(low);
+          low.connect(pourGain);
+          pourGain.connect(master);
+          src.start();
         }
         if (audioCtx.state === "suspended") audioCtx.resume();
+      }
+      function bubble() {
+        if (!audioCtx || !pouring) return;
+        const t = audioCtx.currentTime;
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = "sine";
+        o.frequency.setValueAtTime(700 + Math.random() * 500, t);
+        o.frequency.exponentialRampToValueAtTime(1400 + Math.random() * 400, t + 0.08);
+        g.gain.setValueAtTime(0.03, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+        o.connect(g); g.connect(master);
+        o.start(t); o.stop(t + 0.1);
       }
       function beep(freq, dur, type, vol, slide) {
         if (!audioCtx) return;
@@ -197,7 +227,15 @@
         handle.classList.toggle("on", on);
         pour.classList.toggle("on", on);
         if (on) speed = 28;
-        if (hiss) hiss.gain.setTargetAtTime(on ? 0.05 : 0, audioCtx.currentTime, 0.04);
+        if (pourGain && audioCtx) {
+          pourGain.gain.setTargetAtTime(on ? 0.045 : 0, audioCtx.currentTime, 0.05);
+          if (on) {
+            bubbleTimer = setInterval(bubble, 140);
+          } else {
+            clearInterval(bubbleTimer);
+            bubbleTimer = null;
+          }
+        }
       }
       function stop() {
         if (!pouring && level === 0) return;
@@ -222,6 +260,7 @@
           speed += 38 * dt;
           level = Math.min(100, level + speed * dt);
           liquid.style.height = level + "%";
+          if (pourFilter) pourFilter.frequency.setTargetAtTime(900 + level * 6, audioCtx.currentTime, 0.05);
           if (level >= 100) stop();
         }
         requestAnimationFrame(loop);
