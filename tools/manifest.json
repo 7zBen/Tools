@@ -1,0 +1,9 @@
+{
+  "tools": [
+    {
+      "slug": "link-queuer",
+      "name": "Link Queuer",
+      "description": "Paste a pile of links, open one, and it drops off the list. Nothing is uploaded."
+    }
+  ]
+}
