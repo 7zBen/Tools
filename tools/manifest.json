@@ -4,6 +4,11 @@
       "slug": "link-queuer",
       "name": "Link Queuer",
       "description": "Paste a pile of links, open one, and it drops off the list. Nothing is uploaded."
+    },
+    {
+      "slug": "clock",
+      "name": "Clock",
+      "description": "A live full-screen clock. Local time only, nothing is uploaded."
     }
   ]
 }

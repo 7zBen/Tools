@@ -1,0 +1,9 @@
+{
+  "games": [
+    {
+      "slug": "slope",
+      "name": "Slope",
+      "description": "Endless downhill. Opens fullscreen so the Unity build starts at the right size."
+    }
+  ]
+}
