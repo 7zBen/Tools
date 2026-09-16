@@ -3,7 +3,18 @@
     {
       "slug": "slope",
       "name": "Slope",
-      "description": "Endless downhill. Opens fullscreen so the Unity build starts at the right size."
+      "description": "Endless downhill. Opens in a new tab.",
+      "newTab": true
+    },
+    {
+      "slug": "block-fit",
+      "name": "Block Fit",
+      "description": "Place pieces on the grid. Full rows and columns clear."
+    },
+    {
+      "slug": "slide",
+      "name": "Slide",
+      "description": "Join the tiles. Arrow keys or swipe."
     }
   ]
 }

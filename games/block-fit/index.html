@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Block Fit</title>
+  <meta name="description" content="Place pieces, clear lines. A block puzzle in the site theme." />
+  <meta name="referrer" content="no-referrer" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23171a21'/%3E%3Crect x='3' y='3' width='4' height='4' rx='1' fill='%236ea8ff'/%3E%3Crect x='8' y='3' width='5' height='4' rx='1' fill='%233dd68c'/%3E%3Crect x='3' y='8' width='10' height='5' rx='1' fill='%23ffb020'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1e232d;
+      --line: #2a3140;
+      --text: #e8edf5;
+      --muted: #8b95a8;
+      --accent: #6ea8ff;
+      --good: #3dd68c;
+      --warn: #ffb020;
+      --cell: 36px;
+      --gap: 4px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { min-height: 100vh; touch-action: manipulation; }
+    .bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; }
+    .bar a { color: var(--muted); text-decoration: none; font-size: 13px; }
+    .bar a:hover { color: var(--accent); }
+    .wrap { max-width: 420px; margin: 0 auto; padding: 0 16px 40px; }
+    h1 { font-size: 22px; letter-spacing: -.02em; margin: 0 0 4px; }
+    .sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+    .hud { display: flex; gap: 8px; margin-bottom: 14px; }
+    .stat { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+    .stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+    .stat span { color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .board-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px; }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, var(--cell));
+      grid-template-rows: repeat(8, var(--cell));
+      gap: var(--gap);
+      justify-content: center;
+    }
+    .cell {
+      width: var(--cell); height: var(--cell); border-radius: 7px;
+      background: #12151c; border: 1px solid #232833;
+    }
+    .cell.on { border-color: transparent; }
+    .cell.ghost { opacity: .45; }
+    .cell.bad { background: #3a1d22 !important; }
+    .tray {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      margin-top: 14px; min-height: 110px;
+    }
+    .piece {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+      display: grid; place-items: center; padding: 10px; cursor: grab; min-height: 110px;
+      user-select: none;
+    }
+    .piece.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+    .piece.used { opacity: .2; pointer-events: none; }
+    .mini { display: grid; gap: 3px; }
+    .mini i { display: block; width: 14px; height: 14px; border-radius: 3px; }
+    .actions { display: flex; gap: 8px; margin-top: 14px; }
+    button {
+      appearance: none; flex: 1; background: var(--panel); color: var(--text);
+      border: 1px solid var(--line); border-radius: 10px; padding: 10px; cursor: pointer; font: inherit; font-size: 13px;
+    }
+    button:hover { background: var(--panel-2); }
+    .overlay {
+      position: fixed; inset: 0; background: rgba(8,10,14,.72); display: none;
+      place-items: center; padding: 20px;
+    }
+    .overlay.show { display: grid; }
+    .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; width: min(360px, 100%); text-align: center; }
+    .modal h2 { margin: 0 0 8px; }
+    .modal p { color: var(--muted); margin: 0 0 16px; }
+    .drag {
+      position: fixed; pointer-events: none; z-index: 20; opacity: .92;
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,.45));
+    }
+    @media (max-width: 420px) {
+      :root { --cell: calc((100vw - 64px) / 8 - 4px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar"><a href="../../">← Home</a></div>
+  <div class="wrap">
+    <h1>Block Fit</h1>
+    <p class="sub">Place all three pieces. Full rows and columns vanish.</p>
+    <div class="hud">
+      <div class="stat"><span>Score</span><b id="score">0</b></div>
+      <div class="stat"><span>Best</span><b id="best">0</b></div>
+    </div>
+    <div class="board-wrap"><div class="board" id="board"></div></div>
+    <div class="tray" id="tray"></div>
+    <div class="actions">
+      <button type="button" id="restart">New game</button>
+    </div>
+  </div>
+  <div class="overlay" id="over">
+    <div class="modal">
+      <h2>Board full</h2>
+      <p id="overMsg">No more pieces fit.</p>
+      <button type="button" id="again">Play again</button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const SIZE = 8;
+      const COLORS = ["#6ea8ff", "#3dd68c", "#ffb020", "#c084fc", "#fb7185"];
+      const SHAPES = [
+        [[0,0]],
+        [[0,0],[0,1]],
+        [[0,0],[1,0]],
+        [[0,0],[0,1],[0,2]],
+        [[0,0],[1,0],[2,0]],
+        [[0,0],[0,1],[1,0],[1,1]],
+        [[0,0],[0,1],[0,2],[0,3]],
+        [[0,0],[1,0],[2,0],[3,0]],
+        [[0,0],[0,1],[0,2],[1,2]],
+        [[0,0],[1,0],[2,0],[2,1]],
+        [[0,0],[0,1],[1,0]],
+        [[0,1],[1,0],[1,1],[1,2]],
+        [[0,0],[1,0],[1,1]],
+        [[0,0],[0,1],[1,1],[1,2]],
+        [[0,1],[0,2],[1,0],[1,1]],
+        [[0,0],[1,0],[2,0],[2,1],[2,2]],
+        [[0,0],[0,1],[0,2],[1,0],[2,0]],
+        [[0,0],[0,1],[0,2],[1,1]],
+        [[0,1],[1,0],[1,1],[2,1]]
+      ];
+
+      const boardEl = document.getElementById("board");
+      const trayEl = document.getElementById("tray");
+      const scoreEl = document.getElementById("score");
+      const bestEl = document.getElementById("best");
+      const overEl = document.getElementById("over");
+      const cells = [];
+      let grid = Array.from({ length: SIZE }, function () { return Array(SIZE).fill(0); });
+      let score = 0;
+      let best = parseInt(localStorage.getItem("block-fit-best") || "0", 10) || 0;
+      let tray = [null, null, null];
+      let selected = -1;
+      let drag = null;
+
+      bestEl.textContent = String(best);
+
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          const d = document.createElement("div");
+          d.className = "cell";
+          d.dataset.r = String(r);
+          d.dataset.c = String(c);
+          boardEl.appendChild(d);
+          cells.push(d);
+        }
+      }
+
+      function cellAt(r, c) { return cells[r * SIZE + c]; }
+
+      function randomPiece() {
+        const cells = SHAPES[Math.floor(Math.random() * SHAPES.length)].map(function (p) { return p.slice(); });
+        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        return { cells: cells, color: color };
+      }
+
+      function refillTray() {
+        if (tray.every(function (p) { return !p; })) {
+          tray = [randomPiece(), randomPiece(), randomPiece()];
+        }
+      }
+
+      function canPlace(piece, r0, c0) {
+        for (let i = 0; i < piece.cells.length; i++) {
+          const r = r0 + piece.cells[i][0];
+          const c = c0 + piece.cells[i][1];
+          if (r < 0 || c < 0 || r >= SIZE || c >= SIZE || grid[r][c]) return false;
+        }
+        return true;
+      }
+
+      function anyFit(piece) {
+        const maxR = SIZE, maxC = SIZE;
+        for (let r = 0; r < maxR; r++) {
+          for (let c = 0; c < maxC; c++) {
+            if (canPlace(piece, r, c)) return true;
+          }
+        }
+        return false;
+      }
+
+      function place(piece, r0, c0) {
+        piece.cells.forEach(function (p) { grid[r0 + p[0]][c0 + p[1]] = piece.color; });
+        let rows = [], cols = [];
+        for (let r = 0; r < SIZE; r++) if (grid[r].every(Boolean)) rows.push(r);
+        for (let c = 0; c < SIZE; c++) {
+          let full = true;
+          for (let r = 0; r < SIZE; r++) if (!grid[r][c]) { full = false; break; }
+          if (full) cols.push(c);
+        }
+        const n = rows.length + cols.length;
+        rows.forEach(function (r) { for (let c = 0; c < SIZE; c++) grid[r][c] = 0; });
+        cols.forEach(function (c) { for (let r = 0; r < SIZE; r++) grid[r][c] = 0; });
+        const cellsPlaced = piece.cells.length;
+        score += cellsPlaced + (n ? n * 10 * n : 0);
+        if (score > best) {
+          best = score;
+          localStorage.setItem("block-fit-best", String(best));
+        }
+      }
+
+      function paintBoard(ghost, valid) {
+        for (let r = 0; r < SIZE; r++) {
+          for (let c = 0; c < SIZE; c++) {
+            const el = cellAt(r, c);
+            el.className = "cell" + (grid[r][c] ? " on" : "");
+            el.style.background = grid[r][c] || "";
+          }
+        }
+        if (!ghost) return;
+        ghost.cells.forEach(function (p) {
+          const r = ghost.r + p[0], c = ghost.c + p[1];
+          if (r < 0 || c < 0 || r >= SIZE || c >= SIZE) return;
+          const el = cellAt(r, c);
+          el.classList.add(valid ? "ghost" : "bad");
+          if (valid) el.style.background = ghost.color;
+        });
+      }
+
+      function renderTray() {
+        trayEl.textContent = "";
+        tray.forEach(function (piece, idx) {
+          const box = document.createElement("div");
+          box.className = "piece" + (piece ? "" : " used") + (selected === idx ? " selected" : "");
+          if (piece) {
+            const maxR = Math.max.apply(null, piece.cells.map(function (p) { return p[0]; }));
+            const maxC = Math.max.apply(null, piece.cells.map(function (p) { return p[1]; }));
+            const mini = document.createElement("div");
+            mini.className = "mini";
+            mini.style.gridTemplateColumns = "repeat(" + (maxC + 1) + ", 14px)";
+            mini.style.gridTemplateRows = "repeat(" + (maxR + 1) + ", 14px)";
+            for (let r = 0; r <= maxR; r++) {
+              for (let c = 0; c <= maxC; c++) {
+                const i = document.createElement("i");
+                const hit = piece.cells.some(function (p) { return p[0] === r && p[1] === c; });
+                i.style.background = hit ? piece.color : "transparent";
+                mini.appendChild(i);
+              }
+            }
+            box.appendChild(mini);
+            box.addEventListener("pointerdown", function (ev) { startDrag(ev, idx); });
+            box.addEventListener("click", function (ev) {
+              ev.stopPropagation();
+              selected = selected === idx ? -1 : idx;
+              renderTray();
+            });
+          }
+          trayEl.appendChild(box);
+        });
+      }
+
+      function hud() {
+        scoreEl.textContent = String(score);
+        bestEl.textContent = String(best);
+      }
+
+      function checkOver() {
+        const live = tray.filter(Boolean);
+        if (!live.length) return;
+        if (live.some(anyFit)) return;
+        document.getElementById("overMsg").textContent = "Score " + score + (score >= best ? " · new best" : "");
+        overEl.classList.add("show");
+      }
+
+      function tryDrop(idx, r, c) {
+        const piece = tray[idx];
+        if (!piece || !canPlace(piece, r, c)) return false;
+        place(piece, r, c);
+        tray[idx] = null;
+        selected = -1;
+        refillTray();
+        hud();
+        paintBoard();
+        renderTray();
+        checkOver();
+        return true;
+      }
+
+      function startDrag(ev, idx) {
+        if (!tray[idx]) return;
+        ev.preventDefault();
+        const ghost = document.createElement("div");
+        ghost.className = "drag";
+        ghost.innerHTML = trayEl.children[idx].innerHTML;
+        document.body.appendChild(ghost);
+        drag = { idx: idx, el: ghost };
+        moveDrag(ev);
+        selected = idx;
+        renderTray();
+      }
+
+      function moveDrag(ev) {
+        if (!drag) return;
+        drag.el.style.left = (ev.clientX + 12) + "px";
+        drag.el.style.top = (ev.clientY + 12) + "px";
+        const pos = hoverCell(ev);
+        if (pos) paintBoard({ r: pos.r, c: pos.c, cells: tray[drag.idx].cells, color: tray[drag.idx].color }, canPlace(tray[drag.idx], pos.r, pos.c));
+        else paintBoard();
+      }
+
+      function hoverCell(ev) {
+        const t = document.elementFromPoint(ev.clientX, ev.clientY);
+        if (!t || !t.classList.contains("cell")) return null;
+        return { r: +t.dataset.r, c: +t.dataset.c };
+      }
+
+      function endDrag(ev) {
+        if (!drag) return;
+        const idx = drag.idx;
+        const pos = hoverCell(ev);
+        drag.el.remove();
+        drag = null;
+        if (pos) tryDrop(idx, pos.r, pos.c);
+        else paintBoard();
+      }
+
+      boardEl.addEventListener("click", function (ev) {
+        const t = ev.target.closest(".cell");
+        if (!t || selected < 0 || !tray[selected]) return;
+        tryDrop(selected, +t.dataset.r, +t.dataset.c);
+      });
+
+      window.addEventListener("pointermove", moveDrag);
+      window.addEventListener("pointerup", endDrag);
+
+      function reset() {
+        grid = Array.from({ length: SIZE }, function () { return Array(SIZE).fill(0); });
+        score = 0;
+        tray = [null, null, null];
+        selected = -1;
+        overEl.classList.remove("show");
+        refillTray();
+        hud();
+        paintBoard();
+        renderTray();
+      }
+
+      document.getElementById("restart").onclick = reset;
+      document.getElementById("again").onclick = reset;
+      reset();
+    })();
+  </script>
+</body>
+</html>

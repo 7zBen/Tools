@@ -1,4 +1,5 @@
 {
   "name": "Slope",
-  "description": "Endless downhill. Opens fullscreen so the Unity build starts at the right size."
+  "description": "Endless downhill. Opens in a new tab.",
+  "newTab": true
 }

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Den</title>
-  <meta name="description" content="Ben’s den — small browser tools and games. Everything runs on your device." />
+  <title>7zBen</title>
+  <meta name="description" content="Small browser tools and games." />
   <meta name="referrer" content="no-referrer" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23171a21'/%3E%3Ccircle cx='8' cy='8' r='3.2' fill='none' stroke='%236ea8ff' stroke-width='1.6'/%3E%3C/svg%3E" />
   <style>
@@ -20,7 +20,7 @@
       --radius: 16px;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     body { min-height: 100vh; }
     .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 80px; }
     header { margin-bottom: 36px; }
@@ -52,7 +52,7 @@
   <div class="wrap">
     <header>
       <p class="brand">7zBen</p>
-      <h1 id="siteTitle">Den</h1>
+      <h1 id="siteTitle">Home</h1>
       <p class="lede" id="siteDesc">Tools first, games underneath. Everything here runs in your browser.</p>
     </header>
 
@@ -100,6 +100,15 @@
       return { owner: "7zBen", repo: "tools" };
     }
 
+    function absHref(base, href, folder, slug) {
+      if (href) {
+        if (/^https?:\/\//i.test(href)) return href;
+        if (href.charAt(0) === "/") return href;
+        return base + "/" + href.replace(/^\.\//, "");
+      }
+      return base + "/" + folder + "/" + encodeURIComponent(slug) + "/";
+    }
+
     async function fetchJson(url) {
       try {
         const res = await fetch(url, { cache: "no-store" });
@@ -138,7 +147,8 @@
           slug: entry.name,
           name: (meta && meta.name) || humanize(entry.name),
           description: (meta && meta.description) || "",
-          href: base + "/" + folder + "/" + encodeURIComponent(entry.name) + "/"
+          href: absHref(base, meta && meta.href, folder, entry.name),
+          newTab: !!(meta && meta.newTab)
         });
       }
       return items;
@@ -153,9 +163,19 @@
           slug: item.slug,
           name: item.name || humanize(item.slug),
           description: item.description || "",
-          href: base + "/" + folder + "/" + encodeURIComponent(item.slug) + "/"
+          href: absHref(base, item.href, folder, item.slug),
+          newTab: !!item.newTab
         };
       });
+    }
+
+    function mergeItems(discovered, extras) {
+      const map = {};
+      discovered.forEach(function (item) { map[item.slug] = item; });
+      extras.forEach(function (item) {
+        map[item.slug] = Object.assign({}, map[item.slug] || {}, item);
+      });
+      return Object.keys(map).map(function (k) { return map[k]; });
     }
 
     function render(grid, items) {
@@ -164,22 +184,24 @@
         const a = document.createElement("a");
         a.className = "card";
         a.href = item.href;
+        if (item.newTab) {
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+        }
         const h3 = document.createElement("h3");
         h3.textContent = item.name;
         const p = document.createElement("p");
         p.textContent = item.description;
-        const slug = document.createElement("div");
-        slug.className = "slug";
-        slug.textContent = item.href.replace(/^\//, "");
-        a.append(h3, p, slug);
+        a.append(h3, p);
         grid.appendChild(a);
       });
     }
 
     async function loadSection(owner, repo, base, folder, metaName, grid, status) {
-      let items = [];
-      try { items = await fromApi(owner, repo, base, folder, metaName); } catch (err) { console.warn(err); }
-      if (!items.length) items = await fromManifest(base, folder);
+      let discovered = [];
+      try { discovered = await fromApi(owner, repo, base, folder, metaName); } catch (err) { console.warn(err); }
+      const extras = await fromManifest(base, folder);
+      const items = mergeItems(discovered, extras);
       if (!items.length) {
         status.textContent = "Nothing here yet.";
         return;
