@@ -58,13 +58,13 @@
 
     <section>
       <h2 class="section">Tools</h2>
-      <p class="status" id="toolsStatus">Looking for tools…</p>
+      <p class="status" id="toolsStatus">Loading…</p>
       <div class="grid" id="toolsGrid"></div>
     </section>
 
     <section>
       <h2 class="section">Games</h2>
-      <p class="status" id="gamesStatus">Looking for games…</p>
+      <p class="status" id="gamesStatus">Loading…</p>
       <div class="grid" id="gamesGrid"></div>
     </section>
 
@@ -119,15 +119,6 @@
       }
     }
 
-    async function exists(url) {
-      try {
-        const res = await fetch(url, { method: "GET", cache: "no-store" });
-        return res.ok;
-      } catch {
-        return false;
-      }
-    }
-
     async function fromApi(owner, repo, base, folder, metaName) {
       if (!owner || !repo) return [];
       const res = await fetch(
@@ -137,21 +128,19 @@
       if (!res.ok) throw new Error("GitHub API " + res.status);
       const entries = await res.json();
       if (!Array.isArray(entries)) return [];
-      const items = [];
-      for (const entry of entries) {
-        if (entry.type !== "dir" || !entry.name || entry.name.startsWith(".")) continue;
-        const indexOk = await exists(base + "/" + folder + "/" + entry.name + "/index.html");
-        if (!indexOk) continue;
+      const dirs = entries.filter(function (entry) {
+        return entry.type === "dir" && entry.name && !entry.name.startsWith(".");
+      });
+      return Promise.all(dirs.map(async function (entry) {
         const meta = await fetchJson(base + "/" + folder + "/" + entry.name + "/" + metaName);
-        items.push({
+        return {
           slug: entry.name,
           name: (meta && meta.name) || humanize(entry.name),
           description: (meta && meta.description) || "",
           href: absHref(base, meta && meta.href, folder, entry.name),
           newTab: !!(meta && meta.newTab)
-        });
-      }
-      return items;
+        };
+      }));
     }
 
     async function fromManifest(base, folder) {
@@ -198,16 +187,25 @@
     }
 
     async function loadSection(owner, repo, base, folder, metaName, grid, status) {
-      let discovered = [];
-      try { discovered = await fromApi(owner, repo, base, folder, metaName); } catch (err) { console.warn(err); }
+      status.textContent = "Loading…";
       const extras = await fromManifest(base, folder);
-      const items = mergeItems(discovered, extras);
-      if (!items.length) {
-        status.textContent = "Nothing here yet.";
-        return;
+      if (extras.length) {
+        status.textContent = "";
+        render(grid, extras);
       }
-      status.textContent = "";
-      render(grid, items);
+      try {
+        const discovered = await fromApi(owner, repo, base, folder, metaName);
+        const items = mergeItems(discovered, extras);
+        if (!items.length) {
+          status.textContent = extras.length ? "" : "Nothing here yet.";
+          return;
+        }
+        status.textContent = "";
+        render(grid, items);
+      } catch (err) {
+        console.warn(err);
+        if (!extras.length) status.textContent = "Couldn’t load this list.";
+      }
     }
 
     (async function init() {
@@ -223,8 +221,10 @@
       const owner = (site.github && site.github.owner) || detected.owner;
       const repo = (site.github && site.github.repo) || detected.repo;
 
-      await loadSection(owner, repo, base, "tools", "tool.json", document.getElementById("toolsGrid"), document.getElementById("toolsStatus"));
-      await loadSection(owner, repo, base, "games", "game.json", document.getElementById("gamesGrid"), document.getElementById("gamesStatus"));
+      await Promise.all([
+        loadSection(owner, repo, base, "tools", "tool.json", document.getElementById("toolsGrid"), document.getElementById("toolsStatus")),
+        loadSection(owner, repo, base, "games", "game.json", document.getElementById("gamesGrid"), document.getElementById("gamesStatus"))
+      ]);
     })();
   </script>
 </body>

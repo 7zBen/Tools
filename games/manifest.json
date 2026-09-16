@@ -24,7 +24,7 @@
     {
       "slug": "tic-tac-toe",
       "name": "Tic Tac Toe",
-      "description": "You are X. The computer plays a perfect O."
+      "description": "Two players, or vs the computer."
     },
     {
       "slug": "simon",
@@ -34,7 +34,7 @@
     {
       "slug": "fill-the-mug",
       "name": "Fill the Mug",
-      "description": "Hold the tap and stop on the line."
+      "description": "Hold the tap and stop on the line. It fills fast."
     },
     {
       "slug": "minesweeper",
