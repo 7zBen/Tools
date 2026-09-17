@@ -10,6 +10,11 @@
     :root { --bg:#0f1115; --panel:#171a21; --line:#2a3140; --text:#e8edf5; --muted:#8b95a8; --accent:#6ea8ff; --good:#3dd68c; --mid:#ffb020; --bad:#232833; }
     * { box-sizing: border-box; }
     html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    html, body {
+      touch-action: manipulation;
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    }
     .bar { display: flex; justify-content: space-between; padding: 14px 18px; }
     .bar a { color: var(--muted); text-decoration: none; font-size: 13px; }
     .bar a:hover { color: var(--accent); }
@@ -36,6 +41,8 @@
     .kb button {
       flex: 1; min-height: 44px; max-width: 42px; border: 0; border-radius: 8px; background: #2a3140;
       color: var(--text); font: 600 13px/1 inherit; cursor: pointer; text-transform: uppercase;
+      touch-action: manipulation; -webkit-user-select: none; user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
     .kb button.wide { max-width: 64px; font-size: 12px; }
     .kb button.good { background: var(--good); color: #0f1115; }
@@ -102,7 +109,10 @@
         b.type = "button";
         b.textContent = label;
         if (extra) b.className = extra;
-        b.addEventListener("click", function () { handle(label === "Back" ? "Backspace" : label); });
+        b.addEventListener("pointerdown", function (e) {
+          e.preventDefault();
+          handle(label === "Back" ? "Backspace" : label);
+        });
         parent.appendChild(b);
         if (label.length === 1) keys[label] = b;
       }
