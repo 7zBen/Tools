@@ -29,10 +29,11 @@
     .hud { display: flex; gap: 8px; margin-bottom: 12px; }
     .stat { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
     .stat b { display: block; font-variant-numeric: tabular-nums; }
+    .stat i { display: block; color: var(--muted); font-size: 11px; font-style: normal; }
     .stat span { color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
     .board-wrap { position: relative; }
     .board {
-      position: relative; display: grid; grid-template-columns: repeat(9, 1fr); gap: 3px;
+      position: relative; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;
       background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 8px;
       touch-action: none; overflow: hidden;
     }
@@ -73,9 +74,10 @@
       box-shadow: inset 0 -5px 0 rgba(0,0,0,.16), inset 0 4px 0 rgba(255,255,255,.28), 0 4px 0 rgba(0,0,0,.16);
     }
     .t3 .gem {
-      width: 64%; height: 60%; border-radius: 50% 50% 18% 18%;
-      background: radial-gradient(circle at 50% 22%, #ffe08a, #ffb020 48%, #c2410c);
-      box-shadow: inset 0 -6px 0 rgba(0,0,0,.14), 0 4px 0 rgba(0,0,0,.16);
+      width: 52%; height: 74%;
+      border-radius: 50% 50% 42% 42% / 62% 62% 38% 38%;
+      background: radial-gradient(circle at 50% 16%, #fffce8, #fde047 38%, #eab308 78%, #a16207);
+      box-shadow: inset 0 -6px 0 rgba(0,0,0,.12), 0 4px 0 rgba(0,0,0,.16);
     }
     .t4 .gem {
       width: 46%; height: 72%;
@@ -83,11 +85,6 @@
       background: radial-gradient(circle at 32% 24%, #efd0ff, #c084fc 46%, #7e22ce);
       box-shadow: inset 0 -5px 0 rgba(0,0,0,.16), inset 0 4px 0 rgba(255,255,255,.28), 0 4px 0 rgba(0,0,0,.16);
       transform: rotate(-18deg);
-    }
-    .t5 .gem {
-      width: 74%; height: 50%; border-radius: 50%;
-      background: radial-gradient(circle at 32% 30%, #ffd7a8, #fb923c 48%, #c2410c);
-      box-shadow: inset 0 -4px 0 rgba(0,0,0,.16), inset 0 3px 0 rgba(255,255,255,.3), 0 3px 0 rgba(0,0,0,.16);
     }
     .stripes {
       position: absolute; inset: 18%; pointer-events: none; z-index: 2; opacity: .95; border-radius: 8px;
@@ -177,7 +174,7 @@
     <h1>Candy Crush</h1>
     <p class="sub">Swap neighbors to make 3 in a row. Hold and drag, or tap two candies.</p>
     <div class="hud">
-      <div class="stat"><span>Level</span><b id="level">1</b></div>
+      <div class="stat"><span>Level</span><b id="level">1</b><i id="best">best 1</i></div>
       <div class="stat"><span>Score</span><b id="score">0</b></div>
       <div class="stat"><span>Goal</span><b id="goal">2500</b></div>
       <div class="stat"><span>Moves</span><b id="moves">30</b></div>
@@ -192,14 +189,15 @@
   </div>
   <script>
     (function () {
-      const N = 9, KINDS = 6, GAP = 3;
+      const N = 7, KINDS = 5, GAP = 5;
       let grid, cells = [], pieces = {}, nextId = 1, selected = null, busy = false;
-      let score, moves, goal, level, combo, muted, audioCtx, master, dragFrom = null;
+      let score, moves, goal, level, combo, muted, audioCtx, master, dragFrom = null, best;
       const boardEl = document.getElementById("board");
       const fxEl = document.getElementById("fx");
       const overEl = document.getElementById("over");
       const muteBtn = document.getElementById("mute");
       muted = localStorage.getItem("candy-mute") === "1";
+      best = parseInt(localStorage.getItem("candy-best") || "1", 10) || 1;
       muteBtn.textContent = muted ? "Muted" : "Sound on";
 
       for (let i = 0; i < N * N; i++) {
@@ -264,6 +262,7 @@
         document.getElementById("moves").textContent = String(moves);
         document.getElementById("goal").textContent = String(goal);
         document.getElementById("level").textContent = String(level);
+        document.getElementById("best").textContent = "best " + best;
       }
 
       function slotRect(r, c) {
@@ -419,7 +418,7 @@
         setTimeout(function () { d.remove(); }, 700);
       }
 
-      const COLORS = ["#fb7185", "#6ea8ff", "#3dd68c", "#ffb020", "#c084fc", "#fb923c"];
+      const COLORS = ["#fb7185", "#6ea8ff", "#3dd68c", "#fde047", "#c084fc"];
 
       function burstCell(r, c, pts) {
         const x = grid[r][c];
@@ -713,9 +712,29 @@
         moves--;
         hud();
         const result = await cascade({ r1: r1, c1: c1, r2: r2, c2: c2, moved: { r: r2, c: c2 }, color: color });
+        persist();
         busy = false;
         if (result === "win") return end(true);
         if (moves <= 0 && score < goal) return end(false);
+      }
+
+      function persist() {
+        try {
+          localStorage.setItem("candy-save", JSON.stringify({
+            level: level,
+            score: score,
+            moves: moves,
+            over: overEl.classList.contains("show") ? document.getElementById("overTitle").textContent : "",
+            grid: grid ? grid.map(function (row) {
+              return row.map(function (x) { return x ? { t: x.t, s: x.s } : null; });
+            }) : null
+          }));
+          if (level > best) {
+            best = level;
+            localStorage.setItem("candy-best", String(best));
+          }
+        } catch (err) {}
+        hud();
       }
 
       function end(win) {
@@ -723,15 +742,21 @@
         document.getElementById("overTitle").textContent = win ? "Level " + level + " clear" : "Out of moves";
         document.getElementById("overHint").textContent = win ? "Tap for the next level" : "Tap to retry";
         overEl.classList.add("show");
-        if (win) { beep(523, 0.12, "sine", 0.1); beep(659, 0.16, "triangle", 0.1); beep(784, 0.28, "sine", 0.12); }
-        else beep(140, 0.25, "triangle", 0.1, 70);
+        if (win) {
+          beep(523, 0.12, "sine", 0.1); beep(659, 0.16, "triangle", 0.1); beep(784, 0.28, "sine", 0.12);
+          if (level + 1 > best) { best = level + 1; localStorage.setItem("candy-best", String(best)); }
+        } else beep(140, 0.25, "triangle", 0.1, 70);
+        persist();
       }
 
       function startLevel(resetAll) {
-        if (resetAll) level = 1;
+        if (resetAll) {
+          level = 1;
+          try { localStorage.removeItem("candy-save"); } catch (err) {}
+        }
         score = 0;
-        goal = Math.round(1800 + level * 900);
-        moves = Math.max(18, 30 - Math.floor(level / 2));
+        goal = Math.round(900 + level * 550);
+        moves = Math.max(16, 26 - Math.floor(level / 2));
         busy = false;
         selected = null;
         dragFrom = null;
@@ -740,6 +765,35 @@
         clearPieces();
         fillFresh();
         syncPieces(false);
+        persist();
+      }
+
+      function restore() {
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem("candy-save") || "null"); } catch (err) { saved = null; }
+        if (!saved || !saved.grid || saved.grid.length !== N) return false;
+        level = saved.level || 1;
+        score = saved.score || 0;
+        goal = Math.round(900 + level * 550);
+        moves = saved.moves;
+        nextId = 1;
+        grid = saved.grid.map(function (row) {
+          return row.map(function (x) { return x ? { t: x.t, s: x.s, id: nextId++ } : null; });
+        });
+        busy = false;
+        selected = null;
+        dragFrom = null;
+        fxEl.textContent = "";
+        clearPieces();
+        syncPieces(false);
+        if (saved.over) {
+          document.getElementById("overTitle").textContent = saved.over;
+          document.getElementById("overHint").textContent = saved.over.indexOf("clear") >= 0 ? "Tap for the next level" : "Tap to retry";
+          overEl.classList.add("show");
+          busy = true;
+        }
+        hud();
+        return true;
       }
 
       overEl.addEventListener("click", function () {
@@ -762,7 +816,7 @@
         if (master) master.gain.setTargetAtTime(muted ? 0 : 0.16, audioCtx.currentTime, 0.02);
       };
       window.addEventListener("resize", function () { if (grid) syncPieces(false); });
-      startLevel(true);
+      if (!restore()) startLevel(true);
     })();
   </script>
 </body>
